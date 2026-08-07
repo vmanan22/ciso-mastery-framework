@@ -1,0 +1,44 @@
+# ------------------------------------------------------------------------------
+# Gitleaks Secret Detection Configuration
+# Scope: Pre-commit hooks & CI/CD Pipeline
+# ------------------------------------------------------------------------------
+
+title = "DevSecOps Platform Gitleaks Rules"
+
+[allowlist]
+description = "Global allowlist for safe paths"
+paths = [
+    '''\.gitleaks\.toml$''',
+    '''README\.md$''',
+    '''docs/.*'''
+]
+
+[[rules]]
+id = "aws-access-key-id"
+description = "Identified AWS Access Key ID"
+regex = '''(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}'''
+keywords = ["AKIA", "ASIA", "AGPA", "AIDA"]
+
+[[rules]]
+id = "aws-secret-access-key"
+description = "Identified AWS Secret Access Key"
+regex = '''(?i)aws_(?:secret_)?access_key(?:_id)?\s*[:=]\s*["']?([A-Za-z0-9/+=]{40})["']?'''
+keywords = ["aws_secret_access_key", "aws_access_key"]
+
+[[rules]]
+id = "generic-api-key"
+description = "Identified Generic API Key or Token"
+regex = '''(?i)(?:api_key|apikey|secret_key|auth_token)\s*[:=]\s*["']?([A-Za-z0-9_\-]{32,64})["']?'''
+keywords = ["api_key", "apikey", "secret_key", "auth_token"]
+
+[[rules]]
+id = "private-key"
+description = "Identified Unencrypted Private Key"
+regex = '''-----BEGIN (?:RSA|OPENSSH|DSA|EC|PGP) PRIVATE KEY-----'''
+keywords = ["BEGIN PRIVATE KEY", "RSA PRIVATE KEY"]
+
+[[rules]]
+id = "database-connection-string"
+description = "Identified Database Credentials String"
+regex = '''(?i)(?:postgres|mysql|mongodb|redis)://[a-zA-Z0-9_]+:[^@\s]+@[a-zA-Z0-9.-]+:[0-9]+/[a-zA-Z0-9_]+'''
+keywords = ["postgres://", "mysql://", "mongodb://"]

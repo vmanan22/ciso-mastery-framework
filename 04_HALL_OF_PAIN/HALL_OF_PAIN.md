@@ -1,0 +1,46 @@
+# Hall of Pain 🔥
+
+> Every mistake is a lesson. Every lesson is progress. Track them here ruthlessly.
+>
+> **Rule**: No vague entries. Be specific about what happened, why, and what you'll do differently.
+
+---
+
+## Mistake Log
+
+| # | Date | Category | What Happened | Root Cause | Lesson Learned | Prevention Strategy |
+|---|------|----------|--------------|------------|----------------|---------------------|
+| 1 | _YYYY-MM-DD_ | _e.g., Security, Architecture, Code_ | _Specific description_ | _Why it happened_ | _What I learned_ | _How I'll prevent this_ |
+
+---
+
+## Categories
+
+- **Security** — Missed vulnerability, weak control, insecure design
+- **Architecture** — Poor design decision, scalability miss, wrong pattern
+- **Code** — Bug, anti-pattern, poor readability, missing tests
+- **Communication** — Unclear explanation, wrong audience level, missing context
+- **Process** — Skipped step, wrong prioritization, scope creep
+- **Knowledge Gap** — Didn't know a concept, used wrong terminology
+
+---
+
+## Anti-Patterns I've Caught Myself Doing
+
+| Anti-Pattern | Times Caught | Last Occurrence | Status |
+|-------------|-------------|----------------|--------|
+| _e.g., "Jumping to code before understanding the problem"_ | _0_ | _N/A_ | 🔴 Active |
+
+---
+
+## Hall of Fame (Graduated Lessons)
+
+> When a lesson has been fully internalized (3+ weeks without repeating), move it here.
+
+| # | Original Mistake | Lesson | Graduated Date |
+|---|-----------------|--------|----------------|
+| | | | |
+
+---
+
+*Update this after every session, weekly challenge, and code review.*
