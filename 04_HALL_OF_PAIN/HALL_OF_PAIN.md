@@ -10,7 +10,10 @@
 
 | # | Date | Category | What Happened | Root Cause | Lesson Learned | Prevention Strategy |
 |---|------|----------|--------------|------------|----------------|---------------------|
-| 1 | _YYYY-MM-DD_ | _e.g., Security, Architecture, Code_ | _Specific description_ | _Why it happened_ | _What I learned_ | _How I'll prevent this_ |
+| 1 | 2026-08-21 | Process / CI | Workflows placed in subdirectories were not picked up by GitHub Actions | GitHub Actions strictly mandates workflows in root `.github/workflows/` | GitHub repository root is the only valid location for Actions workflows | Always verify workflow path is `.github/workflows/*.yml` at workspace root |
+| 2 | 2026-08-21 | Security / Git | Pushing workflow file rejected by remote | Git CLI token lacked explicit `workflow` OAuth scope | GitHub requires separate `workflow` scope to prevent unauthorized pipeline tampering | Run `gh auth refresh -s workflow` when managing CI/CD workflows |
+| 3 | 2026-08-21 | Security / Code | Hardcoded API key found in local client script | Placeholder key left in during quick prototyping | Secrets in source files get committed if not checked | Run automated pre-commit scanners (`gitleaks`, `semgrep`) before every commit |
+
 
 ---
 
