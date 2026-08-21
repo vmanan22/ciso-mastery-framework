@@ -1,0 +1,469 @@
+openapi: 3.1.0
+
+# ==============================================================================
+# INFO BLOCK
+# Purpose: Metadata about this API.
+# Why it matters: API consumers (other devs, frontend, security reviewers)
+# know exactly what this service does, who owns it, and which version they're
+# talking to. Without this, APIs become "mystery boxes".
+# ==============================================================================
+info:
+  title: AI-Powered Secure SDLC Platform API
+  version: 1.0.0
+  description: |
+    REST API for the Secure SDLC Platform.
+
+    ## Security Model
+    All endpoints except `/healthz` require a valid **JWT Bearer token**.
+    Tokens are issued by the platform's identity provider (OIDC-compatible).
+
+    ## Why JWT?
+    JWT (JSON Web Token) is stateless — the server does NOT need to store
+    sessions in a database. The token itself contains signed claims (user ID,
+    roles, expiry). This scales horizontally with zero shared state.
+  contact:
+    name: SSDLC Platform Team
+    email: security-platform@company.com
+  license:
+    name: Apache 2.0
+
+# ==============================================================================
+# SERVERS BLOCK
+# Purpose: Tell API consumers WHERE the API lives per environment.
+# Why it matters: A spec without server URLs is useless for automated testing.
+# In Spec-Driven Development, mocking tools (like Prism) use these URLs to
+# spin up a fake server from this spec before real code exists.
+# ==============================================================================
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+  - url: https://api.ssdlc-platform.internal
+    description: Production (internal network only)
+
+# ==============================================================================
+# SECURITY BLOCK (Global Default)
+# Purpose: Every endpoint in this spec requires BearerAuth UNLESS the endpoint
+# explicitly overrides it with `security: []` (empty = no auth required).
+# Why this matters: Security-by-default. Developers must consciously OPT-OUT
+# of auth (forcing a deliberate decision) rather than accidentally leaving
+# endpoints unprotected.
+# ==============================================================================
+security:
+  - BearerAuth: []
+
+# ==============================================================================
+# PATHS BLOCK
+# Purpose: Define every URL endpoint, its HTTP method, request schema,
+# response schema, and security requirements.
+# ==============================================================================
+paths:
+
+  # ----------------------------------------------------------------------------
+  # Health Check Endpoint
+  # Security decision: security: [] overrides the global BearerAuth requirement.
+  # WHY: Kubernetes liveness/readiness probes and load balancers must be able
+  # to reach /healthz without credentials. Blocking them would cause false
+  # "service down" alerts and unnecessary pod restarts.
+  # ----------------------------------------------------------------------------
+  /healthz:
+    get:
+      operationId: health_check
+      summary: Service health check
+      description: |
+        Returns the operational status of the service.
+        **Security override**: No authentication required.
+        Kubernetes probes and load balancers call this endpoint every 10-30s.
+      tags:
+        - Platform
+      security: []    # ← Explicitly overrides global BearerAuth requirement
+      responses:
+        "200":
+          description: Service is healthy and operational
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+  # ----------------------------------------------------------------------------
+  # Secure Data Endpoint
+  # Security decision: Inherits global BearerAuth requirement.
+  # WHY: Any data endpoint must be authenticated. Currently returns a mock
+  # payload — this will eventually return real SSDLC scan results.
+  # ----------------------------------------------------------------------------
+  /api/v1/data:
+    get:
+      operationId: get_secure_data
+      summary: Retrieve secured platform data
+      description: |
+        Returns platform data. Requires a valid JWT Bearer token.
+        The caller's identity (from the JWT `sub` claim) is logged for audit.
+      tags:
+        - Data
+      # No security override here → inherits global BearerAuth: []
+      responses:
+        "200":
+          description: Data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SecureDataResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  # ----------------------------------------------------------------------------
+  # SAST Scan Submission Endpoint (NEW - not yet implemented in main.py)
+  # This is Spec-Driven Development in action: we define this endpoint here
+  # BEFORE writing the implementation code.
+  # WHY: Writing the spec first forces us to answer hard design questions up
+  # front: What does the caller send? What do we return? What errors are
+  # possible? These are much cheaper to change in a YAML file than in live code.
+  # ----------------------------------------------------------------------------
+  /api/v1/scan/sast:
+    post:
+      operationId: submit_sast_scan
+      summary: Submit code for SAST security scanning
+      description: |
+        Accepts source code or a repository reference and schedules a
+        Static Application Security Testing (SAST) scan using Semgrep.
+        Returns a scan job ID. Results are retrieved asynchronously.
+
+        **Why async?** SAST scans on large repos take 30-300 seconds.
+        Returning results synchronously would time out HTTP connections.
+      tags:
+        - Scanning
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SastScanRequest"
+      responses:
+        "202":
+          description: Scan accepted and queued (202 Accepted = async operation started)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanJobAccepted"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/v1/scan/sast/{job_id}:
+    get:
+      operationId: get_sast_scan_results
+      summary: Retrieve SAST scan results
+      description: |
+        Polls for the status and results of a previously submitted SAST scan job.
+        Returns findings with severity ratings mapped to CVSS scores.
+      tags:
+        - Scanning
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          description: UUID of the scan job returned by the submit endpoint
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Scan results retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SastScanResult"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+# ==============================================================================
+# COMPONENTS BLOCK
+# Purpose: Reusable schemas and security definitions referenced throughout the
+# spec using $ref. DRY principle applied to API design.
+# ==============================================================================
+components:
+
+  # ----------------------------------------------------------------------------
+  # SECURITY SCHEMES
+  # WHY BearerAuth/JWT over API Keys?
+  # API Keys are static secrets — they never expire, can be copied, and if
+  # leaked are valid forever until manually rotated. JWT tokens expire (typically
+  # 15-60 minutes), are scoped to a specific user/service, and can be revoked
+  # via the identity provider without touching the API service itself.
+  # ----------------------------------------------------------------------------
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT issued by the OIDC identity provider.
+        Expected claims: `sub` (user ID), `exp` (expiry), `roles` (permissions).
+
+  # ----------------------------------------------------------------------------
+  # REUSABLE RESPONSE DEFINITIONS
+  # WHY define these as $ref components?
+  # Because 401 Unauthorized looks the same across every endpoint. Defining it
+  # once and referencing it enforces consistency and reduces spec maintenance.
+  # If you need to change the error shape, you change it in ONE place.
+  # ----------------------------------------------------------------------------
+  responses:
+    Unauthorized:
+      description: Authentication required — missing or invalid JWT token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: "Unauthorized"
+            message: "A valid Bearer token is required to access this endpoint."
+            code: 401
+
+    Forbidden:
+      description: Authenticated but not authorized — insufficient role/permissions
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: "Forbidden"
+            message: "Your role does not have permission to perform this action."
+            code: 403
+
+    BadRequest:
+      description: Request body is malformed or missing required fields
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+    NotFound:
+      description: Requested resource does not exist
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+    UnprocessableEntity:
+      description: Request body is valid JSON but fails business validation rules
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+    InternalServerError:
+      description: Unexpected server-side error — logged and alerted
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: "InternalServerError"
+            message: "An unexpected error occurred. Request ID logged for investigation."
+            code: 500
+
+  # ----------------------------------------------------------------------------
+  # DATA SCHEMAS
+  # ----------------------------------------------------------------------------
+  schemas:
+
+    # Health check response shape
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - service
+        - version
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+          example: healthy
+        service:
+          type: string
+          example: "ssdlc-platform"
+        version:
+          type: string
+          example: "1.0.0"
+
+    # Secured data response (placeholder — will evolve to scan summaries)
+    SecureDataResponse:
+      type: object
+      required:
+        - message
+        - encryption
+        - auth
+      properties:
+        message:
+          type: string
+        encryption:
+          type: string
+          example: "KMS-AES-256"
+        auth:
+          type: string
+          example: "OIDC-Verified"
+
+    # SAST scan submission request
+    # WHY require repo_url OR code_snippet but not both?
+    # Two different use cases: CI/CD scans point to a repo, inline IDE checks
+    # send a code snippet. We use oneOf (conceptually) enforced by the
+    # required fields and validation logic.
+    SastScanRequest:
+      type: object
+      properties:
+        repo_url:
+          type: string
+          format: uri
+          description: Git repository URL to clone and scan
+          example: "https://github.com/org/repo"
+        code_snippet:
+          type: string
+          description: Inline source code to scan (max 50KB)
+          maxLength: 51200
+        language:
+          type: string
+          enum: [python, javascript, typescript, go, java, terraform, dockerfile]
+          description: Programming language of the code being scanned
+        ruleset:
+          type: string
+          enum: [owasp-top-10, cwe-top-25, pci-dss, hipaa, soc2]
+          default: owasp-top-10
+          description: Security ruleset to scan against
+
+    # Accepted response when scan is queued
+    ScanJobAccepted:
+      type: object
+      required:
+        - job_id
+        - status
+        - poll_url
+      properties:
+        job_id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        status:
+          type: string
+          enum: [queued, running, completed, failed]
+          example: queued
+        poll_url:
+          type: string
+          format: uri
+          description: URL to poll for results
+          example: "/api/v1/scan/sast/550e8400-e29b-41d4-a716-446655440000"
+        estimated_duration_seconds:
+          type: integer
+          example: 45
+
+    # SAST scan findings result
+    SastScanResult:
+      type: object
+      required:
+        - job_id
+        - status
+        - findings
+      properties:
+        job_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [queued, running, completed, failed]
+        scanned_at:
+          type: string
+          format: date-time
+        findings:
+          type: array
+          items:
+            $ref: "#/components/schemas/SecurityFinding"
+        summary:
+          $ref: "#/components/schemas/FindingSummary"
+
+    # Individual security finding
+    SecurityFinding:
+      type: object
+      required:
+        - rule_id
+        - severity
+        - message
+        - file_path
+        - line_number
+      properties:
+        rule_id:
+          type: string
+          description: Semgrep rule ID that triggered
+          example: "python.django.security.audit.xss.template-autoescape-off"
+        severity:
+          type: string
+          enum: [CRITICAL, HIGH, MEDIUM, LOW, INFO]
+        cwe:
+          type: string
+          description: CWE identifier for the vulnerability class
+          example: "CWE-79"
+        owasp_category:
+          type: string
+          example: "A03:2021 – Injection"
+        message:
+          type: string
+          description: Human-readable description of the vulnerability
+        file_path:
+          type: string
+          example: "src/auth/login.py"
+        line_number:
+          type: integer
+          example: 42
+        remediation:
+          type: string
+          description: Actionable fix recommendation
+
+    # Aggregate summary of all findings
+    FindingSummary:
+      type: object
+      properties:
+        total:
+          type: integer
+        critical:
+          type: integer
+        high:
+          type: integer
+        medium:
+          type: integer
+        low:
+          type: integer
+        info:
+          type: integer
+
+    # Standard error envelope — ALL error responses use this shape
+    # WHY a standard envelope? Consistency. API consumers write ONE error
+    # handler instead of guessing each endpoint's error shape.
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+        - code
+      properties:
+        error:
+          type: string
+          description: Machine-readable error type
+          example: "Unauthorized"
+        message:
+          type: string
+          description: Human-readable explanation
+        code:
+          type: integer
+          description: HTTP status code (mirrors the HTTP response code)
+        request_id:
+          type: string
+          format: uuid
+          description: Unique ID for tracing this request in logs

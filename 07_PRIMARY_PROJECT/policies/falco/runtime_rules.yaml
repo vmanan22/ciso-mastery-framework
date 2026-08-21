@@ -1,0 +1,29 @@
+# ------------------------------------------------------------------------------
+# Falco Kubernetes Runtime Security Rules
+# Detects real-time container compromises, shell executions, and unexpected writes
+# ------------------------------------------------------------------------------
+
+- rule: Terminal Shell Spawned in Container
+  desc: Detect interactive shell execution (bash, sh) inside application containers
+  condition: >
+    container.id != host and
+    evt.type = execve and
+    proc.name in (bash, sh, zsh, ksh, csh) and
+    not user.name = "root"
+  output: >
+    CRITICAL ALERT: Interactive shell spawned in container 
+    (user=%user.name container_id=%container.id container_name=%container.name image=%container.image.repository proc=%proc.name cmdline=%proc.cmdline)
+  priority: CRITICAL
+  tags: [container, shell, mitre_execution]
+
+- rule: Write below root or binary dir
+  desc: Detect unexpected file creation in system binary folders
+  condition: >
+    evt.type in (open, openat, creat) and
+    evt.arg.flags contains O_CREAT and
+    fd.directory in (/bin, /sbin, /usr/bin, /usr/sbin)
+  output: >
+    WARNING ALERT: File created under system binary directory 
+    (user=%user.name command=%proc.cmdline file=%fd.name container=%container.name)
+  priority: WARNING
+  tags: [filesystem, mitre_persistence]

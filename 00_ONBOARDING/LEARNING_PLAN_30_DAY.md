@@ -13,10 +13,10 @@
 |-----|-------------------------|--------------------------|---------------------|
 | 1 | **Secure SDLC**: OWASP SDLC phases, threat modeling concepts | **CISO Thinking**: Read "What does a CISO actually do?" — write your own CISO job description | Learning Log |
 | 2 | **Software Engineering**: Clean code principles, SOLID, DRY — refactor a sample codebase | **Executive Communication**: Write a 1-page security brief for a fictional board | Learning Log |
-| 3 | **Architecture**: Monolith vs. Microservices — diagram trade-offs for a SaaS product | **Technical Decision Making**: ADR (Architecture Decision Record) exercise | Learning Log |
+| 3 | **Spec-Driven Architecture**: Spec-Driven Development (SDD) fundamentals, OpenAPI 3.0/JSON Schema — write API & Security specs before code | **Technical Decision Making**: ADR (Architecture Decision Record) exercise | Learning Log |
 | 4 | **GitHub**: Branch strategies, PR reviews, GitHub Actions basics | **Stakeholder Management**: Map stakeholders for a security initiative | Learning Log |
 | 5 | **Secure Code Review**: Review a deliberately vulnerable code sample (OWASP Top 10) | **Business Alignment**: Translate a security risk into business impact ($) | Learning Log |
-| 6 | **Primary Project**: Define product vision for AI-Powered Secure SDLC Platform | **CISO Thinking**: Write a risk register for the primary project | Learning Log |
+| 6 | **Primary Project**: Define product vision & Spec-First framework for AI-Powered Secure SDLC Platform | **CISO Thinking**: Write a risk register for the primary project | Learning Log |
 | 7 | **Week 1 Review**: Complete Week 1 challenges, update Hall of Pain | **Interview Prep**: Answer 3 CISO questions from the bank | Learning Log |
 
 ---
@@ -46,7 +46,7 @@
 | 15 | **AI Engineering**: LLM security risks (prompt injection, data poisoning), OWASP LLM Top 10 | **CISO Thinking**: Write an AI governance policy | Learning Log |
 | 16 | **Full Stack**: Frontend security (XSS, CSP, SRI) — build a secure login page | **Executive Communication**: Present AI risk to "board" | Learning Log |
 | 17 | **AI Engineering**: Build a basic RAG pipeline — focus on security of the data flow | **Technical Decision Making**: Evaluate 3 AI platforms for security use cases | Learning Log |
-| 18 | **Full Stack**: API security (AuthN, AuthZ, rate limiting, input validation) | **Business Alignment**: Build a business case for an AppSec program | Learning Log |
+| 18 | **Spec-Driven API Security**: API security (AuthN, AuthZ, rate limiting) — validate implementation against OpenAPI specs & OPA policy assertions | **Business Alignment**: Build a business case for an AppSec program | Learning Log |
 | 19 | **Secure SDLC**: DAST, IAST, SCA — integrate tools into the primary project pipeline | **Stakeholder Management**: Handle pushback from a dev team resisting security gates | Learning Log |
 | 20 | **Architecture**: Zero Trust architecture design exercise | **CISO Thinking**: Map Zero Trust to business capabilities | Learning Log |
 | 21 | **Week 3 Review**: Complete Week 3 challenges, update Hall of Pain | **Interview Prep**: Enterprise-scale challenge simulation | Learning Log |
@@ -61,9 +61,9 @@
 |-----|-------------------------|--------------------------|---------------------|
 | 22 | **Primary Project**: System architecture design for AI-Powered Secure SDLC Platform | **Executive Communication**: Pitch the platform to a "CEO" in 5 minutes | Learning Log |
 | 23 | **Primary Project**: Threat model (STRIDE) for the platform | **CISO Thinking**: Map threats to NIST CSF | Learning Log |
-| 24 | **Primary Project**: Security controls design and implementation plan | **Technical Decision Making**: Tech stack selection ADR | Learning Log |
-| 25 | **Primary Project**: Build first feature (with full secure SDLC process) | **Business Alignment**: Define KPIs for the platform | Learning Log |
-| 26 | **Primary Project**: Code review of Day 25 work | **Stakeholder Management**: Write a project status update for 3 audiences | Learning Log |
+| 24 | **Primary Project**: Spec-Driven Security Controls & OpenAPI/AsyncAPI specification | **Technical Decision Making**: Tech stack selection ADR | Learning Log |
+| 25 | **Primary Project**: Build first feature using Spec-Driven Development workflow (Spec → Mock → Code → Verify) | **Business Alignment**: Define KPIs for the platform | Learning Log |
+| 26 | **Primary Project**: Code review & Spec compliance audit of Day 25 work | **Stakeholder Management**: Write a project status update for 3 audiences | Learning Log |
 | 27 | **Secure Code Review**: Review an open-source project's security-critical PR | **Executive Communication**: 60-second elevator pitch for your career vision | Learning Log |
 | 28 | **Interview Prep**: Full CISO interview simulation (45 min) | **CISO Thinking**: Post-interview self-assessment | Learning Log |
 | 29 | **Interview Prep**: Full Director interview simulation (45 min) | **Executive Communication**: Salary negotiation practice | Learning Log |

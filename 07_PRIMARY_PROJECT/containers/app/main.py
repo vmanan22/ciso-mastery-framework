@@ -1,11 +1,19 @@
-from fastapi import FastAPI, Response, status
-import os
+from fastapi import FastAPI, status
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(
-    title="DevSecOps Platform Secure Microservice",
-    version="1.0.0",
-    docs_url=None,  # Disable Swagger UI in Production to reduce attack surface
-    redoc_url=None
+    title="Secure Microservice API",
+    description="Production-grade secure service implementing OWASP security controls",
+    version="1.0.0"
+)
+
+# CORS Policy: Restrict Allowed Origins
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://mycompany.com"],
+    allow_credentials=True,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 @app.middleware("http")

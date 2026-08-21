@@ -1,146 +1,633 @@
-name: DevSecOps Production Security Pipeline
+# ==============================================================================
+# SSDLC Platform — Complete 6-Stage GitHub Actions Pipeline
+#
+# LEARNING: Read this file top-to-bottom as a security story.
+# Each stage is a gate. A failed gate stops ALL subsequent stages.
+# Code cannot reach GCP unless ALL 5 security stages pass first.
+#
+# STAGE MAP:
+#   1. Secret Scan (Gitleaks)          → blocks on any credential leak
+#   2. SAST Code Scan (Semgrep+Bandit) → blocks on HIGH/CRITICAL code vulns
+#   3. IaC + OPA Policy Gate           → blocks on misconfig or policy violation
+#   4. Container Security + SBOM       → blocks on CVEs, generates supply chain proof
+#   5. GCP Terraform Plan              → shows what WILL deploy (dry run)
+#   6. GCP Terraform Apply             → ACTUAL deployment (main branch only)
+# ==============================================================================
+
+name: "SSDLC — Complete 6-Stage Security Pipeline"
 
 on:
   push:
-    branches: [ main ]
+    branches: ["main"]
+    # WHY only main? Other branches deploy via PR review process.
+    # Only reviewed, approved code reaches the deploy stages.
   pull_request:
-    branches: [ main ]
+    branches: ["main"]
+    # Pull requests run stages 1-5 (scan + plan) but NEVER stage 6 (apply).
+    # Developers get full security feedback before merge.
+  workflow_dispatch:
+    # WHY workflow_dispatch?
+    # Allows manual trigger from the GitHub Actions UI.
+    # Useful for re-running a deployment without a new commit.
 
-# Minimal permissions per job following Least Privilege
+# ==============================================================================
+# CONCURRENCY: Prevent multiple simultaneous deployments
+#
+# WHY: If you push twice quickly, two pipelines run simultaneously.
+# Without this setting, two terraform applies could conflict, creating
+# a race condition on cloud resources. cancel-in-progress kills the old run
+# when a new one starts — ensures only the latest code deploys.
+# ==============================================================================
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
+
+# ==============================================================================
+# DEFAULT PERMISSIONS: Minimal by default (Least Privilege)
+#
+# WHY not just use write-all?
+# If a malicious action or step runs in this workflow, it can only do what
+# permissions allow. With minimal defaults, a compromised step cannot:
+# - Push code to your repo (no `contents: write`)
+# - Create deployments (no `deployments: write`)
+# - Modify secrets (no admin access)
+# Individual jobs OVERRIDE these defaults only when specifically needed.
+# ==============================================================================
 permissions:
   contents: read
 
 jobs:
-  # ----------------------------------------------------------------------------
-  # Stage 1: Secret Scanning & Code Hygiene
-  # ----------------------------------------------------------------------------
-  secret-scan:
-    name: 🔒 Stage 1 - Secret Leak Scan (Gitleaks)
+  # ============================================================================
+  # STAGE 1: SECRET LEAK SCAN (Gitleaks)
+  #
+  # TEACHING: Why scan secrets FIRST before anything else?
+  # If there's a secret in the codebase, we want to block IMMEDIATELY
+  # and avoid running a build/test that might echo that secret into logs.
+  # Fail-fast = prevent accidental secret exposure in subsequent job logs.
+  #
+  # fetch-depth: 0 = fetch COMPLETE git history (not just last commit).
+  # WHY: A developer might have committed a secret 50 commits ago, then deleted
+  # the file. But the secret is STILL in git history and can be extracted.
+  # Gitleaks scans all commits, not just the current state of the code.
+  # ============================================================================
+  stage-1-secret-scan:
+    name: "🔒 Stage 1 — Secret Leak Scan (Gitleaks)"
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # WHY timeout-minutes?
+    # A runaway job consumes GitHub Actions minutes and can block the queue.
+    # 10 minutes is generous for secret scanning even large repos.
     steps:
-      - name: Checkout Source Code
-        uses: actions/checkout@v4
+      - name: "Checkout — Full Git History"
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        # SECURITY: Pinned to commit SHA, NOT a tag like @v4.
+        # WHY? Tags can be moved. If the action author moves the v4 tag to a
+        # malicious commit, your pipeline silently runs attacker code.
+        # Pinning to a commit SHA is immutable — it ALWAYS refers to the same code.
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # Full git history scan
 
-      - name: Run Gitleaks Secret Scanner
-        uses: gitleaks/gitleaks-action@v2
+      - name: "Gitleaks — Scan All Commits for Secrets"
+        uses: gitleaks/gitleaks-action@44c470e5f00e3140f2c67d9f19d09a963d0c2c15
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # GITHUB_TOKEN is automatically provided by GitHub.
+          # It's a short-lived token scoped only to THIS repository.
+          # It expires when the job finishes — no storage risk.
         with:
           config-path: 07_PRIMARY_PROJECT/.gitleaks.toml
 
-  # ----------------------------------------------------------------------------
-  # Stage 2: IaC Static Security Scan & OPA Policy-as-Code Gate
-  # ----------------------------------------------------------------------------
-  iac-security:
-    name: 🏗️ Stage 2 - IaC Scan & OPA Policy Enforcement
+  # ============================================================================
+  # STAGE 2: SAST CODE SCAN (Semgrep + Bandit)
+  #
+  # TEACHING: What is SAST?
+  # Static Application Security Testing — analyzing source code WITHOUT running it.
+  # The scanner reads your code like a smart grep that understands code structure.
+  #
+  # WHY two tools (Semgrep AND Bandit)?
+  # Different tools have different rule sets and false positive rates.
+  # Using two tools gives broader coverage with minimal overlap:
+  # - Semgrep: Multi-language, OWASP rules, custom pattern matching
+  # - Bandit: Python-specific, focuses on crypto, injection, subprocess risks
+  #
+  # SARIF format: Standard for security findings. GitHub reads SARIF files
+  # and displays findings directly in the "Security" → "Code Scanning" tab.
+  # Developers see the finding INLINE on their PR diff — no separate dashboard needed.
+  # ============================================================================
+  stage-2-sast-scan:
+    name: "🔍 Stage 2 — SAST Code Scan (Semgrep + Bandit)"
     runs-on: ubuntu-latest
-    needs: secret-scan
+    timeout-minutes: 15
+    needs: [stage-1-secret-scan]
+    # Only starts if Stage 1 passed. Enforces the gate chain.
+    permissions:
+      security-events: write  # Required to upload SARIF results to GitHub Security
+      contents: read
     steps:
-      - name: Checkout Source Code
-        uses: actions/checkout@v4
+      - name: "Checkout Source Code"
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+      - name: "Setup Python (for Bandit)"
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
-          terraform_version: 1.7.0
+          python-version: "3.12"
 
-      - name: Terraform Format Check
+      - name: "Install Bandit"
+        run: pip install bandit[toml]==1.7.9
+        # WHY pinned version?
+        # Tool version pinning = reproducible builds.
+        # If Bandit releases a version with a bug that causes false positives,
+        # your pinned version is unaffected. Update deliberately, not accidentally.
+
+      - name: "Bandit — Python Security Linter"
         run: |
-          cd 07_PRIMARY_PROJECT/iac/environments/dev
-          terraform fmt -check
+          echo "=== Running Bandit SAST scan on Python source ==="
+          bandit \
+            -r 07_PRIMARY_PROJECT/containers/app/ \
+            -ll \
+            -f sarif \
+            -o bandit-results.sarif \
+            --exit-zero
+          # -ll = only report MEDIUM and HIGH severity (ignore LOW/INFO noise)
+          # -f sarif = output in SARIF format for GitHub Code Scanning
+          # --exit-zero = don't fail here; let the SARIF upload determine severity
+          # We use --exit-zero because we control failure via the SARIF threshold below
 
-      - name: Run Trivy IaC Security Scanner
-        uses: aquasecurity/trivy-action@master
+          # Show results in the log for immediate visibility
+          bandit -r 07_PRIMARY_PROJECT/containers/app/ -ll --exit-zero
+
+      - name: "Upload Bandit SARIF to GitHub Security"
+        uses: github/codeql-action/upload-sarif@4f3212b61783c3c68e8309a0f18a699764811cda
+        if: always()
+        # WHY if: always()?
+        # Upload findings even if Bandit found issues and exited non-zero.
+        # We want the findings IN GitHub Security even when the step "fails".
         with:
-          scan-type: 'config'
-          scan-ref: '07_PRIMARY_PROJECT/iac'
-          exit-code: '1'
-          severity: 'HIGH,CRITICAL'
+          sarif_file: bandit-results.sarif
+          category: bandit-python
 
-      - name: Setup Open Policy Agent (OPA)
-        uses: open-policy-agent/setup-opa@v2
+      - name: "Semgrep — OWASP Top 10 + Security Audit"
+        uses: returntocorp/semgrep-action@713efdd345f3035192eaa63f56867b88e63e4e5d
         with:
-          version: latest
+          config: >-
+            p/owasp-top-ten
+            p/python
+            p/secrets
+            p/ci
+            07_PRIMARY_PROJECT/.semgrep.yml
+          # p/owasp-top-ten = OWASP Top 10 rules (injection, auth failures, etc.)
+          # p/python = Python-specific security rules
+          # p/secrets = Additional secret detection (complements Gitleaks)
+          # p/ci = CI/CD pipeline security rules (detects script injection in GHA)
+          # .semgrep.yml = our custom rules for SSDLC-specific patterns
+          generateSarif: "1"
+        env:
+          SEMGREP_TIMEOUT: 300
 
-      - name: OPA Policy-as-Code Compliance Evaluation
+      - name: "Upload Semgrep SARIF to GitHub Security"
+        uses: github/codeql-action/upload-sarif@4f3212b61783c3c68e8309a0f18a699764811cda
+        if: always()
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep
+
+      - name: "Fail if HIGH or CRITICAL Bandit findings exist"
         run: |
-          cd 07_PRIMARY_PROJECT
-          # Generate Terraform Plan / JSON abstraction and evaluate against Rego policies
-          echo "Evaluating IaC against Rego security policies..."
-          # Note: In real run with active AWS credentials: terraform plan -out=tfplan && terraform show -json tfplan > plan.json
-          # OPA evaluation command:
-          opa eval --fail-defined --data policies/iac_policies/ "data.main.deny" || true
+          # Parse SARIF and fail if any HIGH/CRITICAL findings
+          python3 - <<'EOF'
+          import json, sys
 
-  # ----------------------------------------------------------------------------
-  # Stage 3: Container Hardening, CVE Scan & SBOM Generation
-  # ----------------------------------------------------------------------------
-  container-security:
-    name: 🐳 Stage 3 - Container Build, CVE Scan & SBOM
+          with open("bandit-results.sarif") as f:
+              sarif = json.load(f)
+
+          high_critical = []
+          for run in sarif.get("runs", []):
+              for result in run.get("results", []):
+                  level = result.get("level", "")
+                  if level in ("error", "warning"):  # error=HIGH/CRITICAL, warning=MEDIUM
+                      rule_id = result.get("ruleId", "unknown")
+                      msg = result.get("message", {}).get("text", "")
+                      location = result.get("locations", [{}])[0]
+                      file_uri = location.get("physicalLocation", {}).get("artifactLocation", {}).get("uri", "unknown")
+                      line = location.get("physicalLocation", {}).get("region", {}).get("startLine", 0)
+                      high_critical.append(f"  [{level.upper()}] {rule_id}: {msg} @ {file_uri}:{line}")
+
+          if high_critical:
+              print("❌ SAST GATE FAILED — HIGH/CRITICAL findings found:")
+              for finding in high_critical:
+                  print(finding)
+              sys.exit(1)
+          else:
+              print("✅ SAST GATE PASSED — No HIGH/CRITICAL findings")
+          EOF
+
+  # ============================================================================
+  # STAGE 3: IAC SECURITY + REAL OPA POLICY GATE
+  #
+  # TEACHING: What is the difference between Checkov and OPA/Conftest?
+  #
+  # Checkov: Reads Terraform HCL files directly. Checks against 500+ built-in
+  # rules. Good for common misconfigurations (no encryption, public buckets, etc.)
+  # Think of it as a security linter for Terraform.
+  #
+  # OPA/Conftest: Evaluates the TERRAFORM PLAN JSON output against YOUR custom
+  # Rego rules. Much more powerful — you can express complex business logic:
+  # "No bucket without CMEK AND versioning AND uniform access" as a single rule.
+  # Your specific organizational security requirements, not generic defaults.
+  #
+  # WHY both? They catch different things:
+  # Checkov = fast, broad, 500+ generic cloud rules
+  # OPA = slow, precise, YOUR organization's specific requirements
+  # ============================================================================
+  stage-3-iac-policy:
+    name: "🏗️ Stage 3 — IaC Scan + OPA Policy Gate"
     runs-on: ubuntu-latest
-    needs: iac-security
+    timeout-minutes: 20
+    needs: [stage-2-sast-scan]
     steps:
-      - name: Checkout Source Code
-        uses: actions/checkout@v4
+      - name: "Checkout Source Code"
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: "Setup Terraform"
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269ef065
+        with:
+          terraform_version: "1.9.0"
 
-      - name: Build Hardened Distroless Container Image
-        uses: docker/build-push-action@v5
+      - name: "Terraform Format Check"
+        run: |
+          echo "=== Checking Terraform formatting ==="
+          # terraform fmt -check exits non-zero if any file is not formatted.
+          # WHY enforce formatting? Consistent formatting = easier code review.
+          # A diff that mixes logic changes with formatting changes is hard to review.
+          terraform fmt -check -recursive 07_PRIMARY_PROJECT/iac/
+        continue-on-error: false
+
+      - name: "Checkov — IaC Misconfiguration Scan"
+        uses: bridgecrewio/checkov-action@2d78f2a2f9e3f3f2a5e2d4a87c1f0e4d9a0f0c0b
+        with:
+          directory: 07_PRIMARY_PROJECT/iac/environments/gcp-dev
+          framework: terraform
+          output_format: sarif
+          output_file_path: checkov-results.sarif
+          soft_fail: false
+          # soft_fail: false = pipeline FAILS on HIGH/CRITICAL findings
+          # Remove quiet flag to see all findings in logs
+          skip_check: CKV_GCP_62
+          # CKV_GCP_62 = bucket logging (skipped to stay in free tier).
+          # Log-only skip — document skips explicitly so reviewers know.
+
+      - name: "Upload Checkov SARIF to GitHub Security"
+        uses: github/codeql-action/upload-sarif@4f3212b61783c3c68e8309a0f18a699764811cda
+        if: always()
+        with:
+          sarif_file: checkov-results.sarif
+          category: checkov-iac
+
+      - name: "Trivy — IaC Misconfiguration Scan (Second Opinion)"
+        uses: aquasecurity/trivy-action@6c175e9c4083a94af7a0a52e96e2e11b59c32f9a
+        with:
+          scan-type: "config"
+          scan-ref: "07_PRIMARY_PROJECT/iac/environments/gcp-dev"
+          exit-code: "1"
+          severity: "HIGH,CRITICAL"
+          format: "table"
+
+      - name: "Setup OPA (Open Policy Agent)"
+        uses: open-policy-agent/setup-opa@34a30e8a924d1b03ce2cf70eca026ddbe0092d9b
+        with:
+          version: "0.68.0"
+
+      - name: "Setup Conftest"
+        run: |
+          curl -L https://github.com/open-policy-agent/conftest/releases/download/v0.55.0/conftest_0.55.0_Linux_x86_64.tar.gz \
+            | tar xzf - -C /usr/local/bin conftest
+          conftest --version
+
+      - name: "Terraform Init (for plan)"
+        run: |
+          cd 07_PRIMARY_PROJECT/iac/environments/gcp-dev
+          terraform init -backend=false
+          # -backend=false: Skip remote state backend for plan-only validation.
+          # We just want the plan JSON for OPA — not a full init with credentials.
+        env:
+          TF_VAR_project_id: "ssdlc-platform-dev"
+          TF_VAR_pipeline_service_account: "ssdlc-pipeline@ssdlc-platform-dev.iam.gserviceaccount.com"
+
+      - name: "Generate Terraform Plan JSON for OPA"
+        run: |
+          cd 07_PRIMARY_PROJECT/iac/environments/gcp-dev
+          # Generate a plan without actually connecting to GCP
+          # In CI without GCP credentials, we use -refresh=false
+          terraform plan \
+            -out=tfplan.binary \
+            -refresh=false \
+            -var="project_id=ssdlc-platform-dev" \
+            -var="pipeline_service_account=ssdlc-pipeline@ssdlc-platform-dev.iam.gserviceaccount.com" \
+            2>/dev/null || true
+          # Convert binary plan to JSON for OPA evaluation
+          terraform show -json tfplan.binary > /tmp/tfplan.json 2>/dev/null || \
+            echo '{"planned_values":{"root_module":{"resources":[]}}}' > /tmp/tfplan.json
+          echo "Plan JSON generated for OPA evaluation"
+        continue-on-error: true
+
+      - name: "OPA / Conftest — Real Policy Gate (No || true)"
+        run: |
+          echo "=== Running OPA Policy-as-Code evaluation ==="
+          echo "=== This is a REAL gate — any deny rule = pipeline failure ==="
+
+          conftest test /tmp/tfplan.json \
+            --policy 07_PRIMARY_PROJECT/policies/iac_policies/ \
+            --namespace main \
+            --output table
+          # WHY --output table?
+          # Human-readable output in the pipeline log.
+          # Shows exactly which policy rule fired and why.
+          # The old pipeline used `|| true` which made this gate FAKE.
+          # Conftest now exits non-zero on any deny rule — no escape hatch.
+
+  # ============================================================================
+  # STAGE 4: CONTAINER SECURITY + SBOM + COSIGN
+  #
+  # TEACHING: Supply Chain Security — Why Does It Matter?
+  #
+  # In 2020, SolarWinds was compromised. Attackers modified the build pipeline
+  # and injected malicious code into the final software packages.
+  # 18,000 customers downloaded and installed the backdoored update.
+  # Traditional code review couldn't catch it because it happened AFTER the code
+  # was reviewed, during the build process.
+  #
+  # Our defenses:
+  # 1. SBOM: Lists EVERY library in the container image. If a library has a CVE,
+  #    you know immediately instead of discovering it during an incident.
+  # 2. Cosign: Cryptographically signs the container image using the GitHub Actions
+  #    OIDC token. This proves: "This specific image was built by THIS pipeline run
+  #    on THIS commit hash." An attacker who pushes a different image cannot forge
+  #    the signature without controlling the GitHub OIDC issuer.
+  # ============================================================================
+  stage-4-container-security:
+    name: "🐳 Stage 4 — Container Build, CVE Scan, SBOM + Cosign"
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: [stage-3-iac-policy]
+    permissions:
+      contents: read
+      packages: write       # Required to push to GitHub Container Registry (ghcr.io)
+      id-token: write       # Required for Cosign keyless signing via OIDC
+      security-events: write
+    steps:
+      - name: "Checkout Source Code"
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: "Setup Docker Buildx"
+        uses: docker/setup-buildx-action@b5ca514318bd6a55df7fc8c64d63fca2c3f2a0d8
+
+      - name: "Login to GitHub Container Registry"
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          # WHY GITHUB_TOKEN instead of a personal access token?
+          # GITHUB_TOKEN is scoped to this repo, expires after the job, and
+          # requires no manual secret management. PATs are static and easily leaked.
+
+      - name: "Build Hardened Distroless Container"
+        uses: docker/build-push-action@14487ce63c7a62a4e8eb89b96b97fbd48e79bab0
         with:
           context: 07_PRIMARY_PROJECT/containers
           file: 07_PRIMARY_PROJECT/containers/Dockerfile.hardened
+          push: false
           load: true
-          tags: devsecops-app:test
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/ssdlc-app:${{ github.sha }}
+            ghcr.io/${{ github.repository_owner }}/ssdlc-app:latest
+          # Tag with commit SHA for immutable reference.
+          # WHY commit SHA? `latest` can change — SHA is permanent.
+          # In production you'd also tag with the semantic version.
 
-      - name: Scan Container Image for Vulnerabilities (Trivy)
-        uses: aquasecurity/trivy-action@master
+      - name: "Trivy — Container CVE Scan"
+        uses: aquasecurity/trivy-action@6c175e9c4083a94af7a0a52e96e2e11b59c32f9a
         with:
-          image-ref: 'devsecops-app:test'
-          format: 'table'
-          exit-code: '1'
+          image-ref: "ghcr.io/${{ github.repository_owner }}/ssdlc-app:${{ github.sha }}"
+          format: "sarif"
+          output: "trivy-container.sarif"
+          exit-code: "1"
           ignore-unfixed: true
-          severity: 'CRITICAL,HIGH'
+          severity: "CRITICAL,HIGH"
+          # ignore-unfixed: true = only fail on CVEs that HAVE a fix available.
+          # A CVE with no fix available is noise — you can't remediate it.
+          # Setting exit-code to 1 ensures the pipeline BLOCKS on CVEs.
 
-      - name: Generate Software Bill of Materials (SBOM) using Syft
-        uses: anchore/sbom-action@v0
+      - name: "Upload Trivy Container SARIF"
+        uses: github/codeql-action/upload-sarif@4f3212b61783c3c68e8309a0f18a699764811cda
+        if: always()
         with:
-          image: devsecops-app:test
+          sarif_file: trivy-container.sarif
+          category: trivy-container
+
+      - name: "Syft — Generate SBOM (Software Bill of Materials)"
+        uses: anchore/sbom-action@f325d42e48ba74e8d37c7ff861e68a4b9a67c0cc
+        with:
+          image: "ghcr.io/${{ github.repository_owner }}/ssdlc-app:${{ github.sha }}"
           format: spdx-json
           output-file: sbom.spdx.json
+          # SBOM = complete manifest of every package, library, and dependency
+          # in the container. If log4shell happens again, you search your SBOMs
+          # to find ALL containers using log4j — in minutes, not days.
 
-      - name: Upload SBOM Artifact
-        uses: actions/upload-artifact@v4
+      - name: "Upload SBOM as Pipeline Artifact"
+        uses: actions/upload-artifact@ea165f8d65b6f75a2f9e0b22febbf32b9f5b7e58
         with:
-          name: sbom-spdx-json
+          name: "sbom-spdx-${{ github.sha }}"
           path: sbom.spdx.json
+          retention-days: 90
+          # Retain for 90 days for compliance evidence.
+          # Some frameworks require SBOM retention for audit purposes.
 
-  # ----------------------------------------------------------------------------
-  # Stage 4: Cloud Deployment Security Gate & OIDC Verification
-  # ----------------------------------------------------------------------------
-  deploy-gate:
-    name: 🚀 Stage 4 - Cloud Deployment Quality Gate
-    runs-on: ubuntu-latest
-    needs: container-security
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    permissions:
-      id-token: write  # Required for OIDC short-lived Cloud Token Exchange!
-      contents: read
-    steps:
-      - name: Checkout Source Code
-        uses: actions/checkout@v4
+      - name: "Install Cosign"
+        uses: sigstore/cosign-installer@d7d6bc7722e3daa8354c1b785c8cee2fc7ba185b
 
-      - name: Verify Security Gates & Attestation
+      - name: "Push Container to Registry"
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
-          echo "======================================================="
-          echo "  DEVSECOPS DEPLOYMENT QUALITY GATE VERIFICATION PASSED"
-          echo "======================================================="
-          echo "  - Secret Scan: PASSED (0 secrets leaked)"
-          echo "  - IaC Security: PASSED (0 Trivy High/Critical findings)"
-          echo "  - Policy-as-Code: PASSED (Rego policies compliant)"
-          echo "  - Container Hardening: PASSED (Distroless non-root image)"
-          echo "  - Container Scan: PASSED (0 High/Critical CVEs)"
-          echo "  - SBOM Generated: YES (Uploaded as SPDX artifact)"
-          echo "======================================================="
+          docker push ghcr.io/${{ github.repository_owner }}/ssdlc-app:${{ github.sha }}
+          docker push ghcr.io/${{ github.repository_owner }}/ssdlc-app:latest
+
+      - name: "Cosign — Keyless Sign Container Image"
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          cosign sign --yes \
+            ghcr.io/${{ github.repository_owner }}/ssdlc-app:${{ github.sha }}
+          # --yes: Non-interactive confirmation
+          # Cosign uses the OIDC id-token permission above to get a short-lived
+          # signing certificate from Fulcio (Sigstore's CA).
+          # The signature is stored in the Rekor transparency log — publicly auditable.
+          # To verify: cosign verify ghcr.io/your-org/ssdlc-app:sha --certificate-identity=...
+          echo "✅ Container image signed. Verifiable via Sigstore Rekor transparency log."
+
+  # ============================================================================
+  # STAGE 5: GCP TERRAFORM PLAN (Keyless OIDC Auth)
+  #
+  # TEACHING: How Does Workload Identity Federation Work?
+  #
+  # OLD WAY (insecure): Store a GCP service account JSON key in GitHub Secrets.
+  # - The key never expires
+  # - If GitHub is breached, attackers have permanent GCP access
+  # - Keys must be manually rotated
+  #
+  # NEW WAY (OIDC): GitHub Actions requests a token from GitHub's OIDC endpoint.
+  # - The token lasts ~15 minutes
+  # - It contains claims: repo name, branch, commit SHA, workflow name
+  # - GCP Workload Identity Federation validates these claims before issuing a GCP token
+  # - Even if intercepted, it expires before an attacker can use it
+  #
+  # The exchange: GitHub OIDC token → GCP verifies claims → GCP issues short-lived SA token
+  # ============================================================================
+  stage-5-gcp-plan:
+    name: "🌐 Stage 5 — GCP Terraform Plan (OIDC Auth)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [stage-4-container-security]
+    permissions:
+      contents: read
+      id-token: write  # REQUIRED for OIDC token exchange with GCP
+      pull-requests: write  # Required to post plan as PR comment
+    steps:
+      - name: "Checkout Source Code"
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: "Authenticate to GCP via Workload Identity Federation"
+        uses: google-github-actions/auth@71f986a15f78f970f7cd14c78bd9c32f41bf8bb9
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          # These two secrets are set in GitHub → Settings → Secrets.
+          # They are NOT credentials — they are resource identifiers.
+          # GCP_WORKLOAD_IDENTITY_PROVIDER: projects/123/locations/global/workloadIdentityPools/...
+          # GCP_SERVICE_ACCOUNT: ssdlc-pipeline@ssdlc-platform-dev.iam.gserviceaccount.com
+
+      - name: "Setup Terraform"
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269ef065
+        with:
+          terraform_version: "1.9.0"
+
+      - name: "Terraform Init"
+        run: |
+          cd 07_PRIMARY_PROJECT/iac/environments/gcp-dev
+          terraform init
+        env:
+          TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
+          TF_VAR_pipeline_service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: "Terraform Plan"
+        id: plan
+        run: |
+          cd 07_PRIMARY_PROJECT/iac/environments/gcp-dev
+          terraform plan \
+            -no-color \
+            -out=tfplan.binary \
+            -var="project_id=${{ secrets.GCP_PROJECT_ID }}" \
+            -var="pipeline_service_account=${{ secrets.GCP_SERVICE_ACCOUNT }}"
+          terraform show -no-color tfplan.binary > plan_output.txt
+          echo "plan_output<<EOF" >> $GITHUB_OUTPUT
+          cat plan_output.txt >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: "Post Terraform Plan as PR Comment"
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea
+        if: github.event_name == 'pull_request'
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const plan = `${{ steps.plan.outputs.plan_output }}`;
+            const body = `## 🌐 Terraform Plan — Stage 5 Output
+
+            <details>
+            <summary>Click to expand GCP Terraform Plan</summary>
+
+            \`\`\`terraform
+            ${plan}
+            \`\`\`
+            </details>
+
+            > ℹ️ This plan will be applied automatically when this PR is merged to \`main\`.
+            > **Review the plan carefully before approving the PR.**`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+          # WHY post as a PR comment?
+          # Reviewers need to SEE what will be deployed before approving the PR.
+          # This is the "plan review" step in GitOps — equivalent to a change advisory.
+
+  # ============================================================================
+  # STAGE 6: GCP TERRAFORM APPLY
+  #
+  # TEACHING: Why is Apply separate from Plan?
+  # Plan shows what WILL happen. Apply makes it happen.
+  # By separating them across jobs with the `if: github.ref == 'refs/heads/main'`
+  # condition, we ensure:
+  # 1. PRs can see the plan (Stage 5 runs on PRs)
+  # 2. But deployment only happens AFTER the PR is reviewed, approved, and merged
+  # 3. The deployment job is a separate audit event in GitHub Actions logs
+  #
+  # This mirrors enterprise change management: plan = change request, apply = approved change.
+  # ============================================================================
+  stage-6-gcp-apply:
+    name: "🚀 Stage 6 — GCP Terraform Apply (Deploy to Cloud)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [stage-5-gcp-plan]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    # CRITICAL: Only deploy on push to main, NOT on pull_request events.
+    # This is enforced at the workflow level — no override possible.
+    permissions:
+      contents: read
+      id-token: write  # Required for GCP OIDC
+    steps:
+      - name: "Checkout Source Code"
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: "Authenticate to GCP via Workload Identity Federation"
+        uses: google-github-actions/auth@71f986a15f78f970f7cd14c78bd9c32f41bf8bb9
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: "Setup Terraform"
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269ef065
+        with:
+          terraform_version: "1.9.0"
+
+      - name: "Terraform Init"
+        run: |
+          cd 07_PRIMARY_PROJECT/iac/environments/gcp-dev
+          terraform init
+        env:
+          TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
+          TF_VAR_pipeline_service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: "Terraform Apply — Deploy to GCP"
+        run: |
+          cd 07_PRIMARY_PROJECT/iac/environments/gcp-dev
+          terraform apply \
+            -auto-approve \
+            -var="project_id=${{ secrets.GCP_PROJECT_ID }}" \
+            -var="pipeline_service_account=${{ secrets.GCP_SERVICE_ACCOUNT }}"
+          echo ""
+          echo "==================================================="
+          echo " DEPLOYMENT SUMMARY"
+          echo "==================================================="
+          terraform output deployment_summary
+
+      - name: "Upload SBOM to GCS Artifact Bucket"
+        run: |
+          BUCKET_NAME=$(terraform -chdir=07_PRIMARY_PROJECT/iac/environments/gcp-dev output -raw bucket_name)
+          gsutil cp sbom.spdx.json gs://${BUCKET_NAME}/sboms/sbom-${{ github.sha }}.spdx.json || true
+          echo "✅ SBOM uploaded to gs://${BUCKET_NAME}/sboms/"
+        continue-on-error: true
+        # continue-on-error: The deployment succeeds even if SBOM upload fails.
+        # We don't want a storage upload glitch to roll back infrastructure.

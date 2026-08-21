@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "nvidia-ai": {
+      "command": "python3",
+      "args": ["/Users/mananvora/CLOS_Kickoff_Mission/.agents/mcp/nvidia_mcp_server.py"]
+    }
+  }
+}

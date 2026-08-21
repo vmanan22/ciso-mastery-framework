@@ -1,0 +1,143 @@
+# ==============================================================================
+# Semgrep Custom Rules — SSDLC Platform Specific
+#
+# LEARNING: Custom Semgrep rules let you enforce YOUR code standards,
+# not just generic OWASP rules. These rules are written in YAML and use
+# pattern matching on code structure (AST matching), not just grep-style text.
+#
+# Why write custom rules?
+# Generic rulesets (p/owasp-top-ten) catch common patterns.
+# Your platform has unique security requirements:
+# - No FastAPI routes without auth dependencies
+# - No debug endpoints in production code
+# - No logging of sensitive parameters
+# ==============================================================================
+
+rules:
+  # ----------------------------------------------------------------------------
+  # RULE 1: Detect FastAPI routes missing authentication dependency
+  #
+  # PROBLEM: A developer adds a new API endpoint but forgets to add the
+  # `Depends(verify_token)` parameter. The endpoint is silently unauthenticated.
+  #
+  # PATTERN: A @app.get/post/put/delete decorator on a function that does NOT
+  # have a `Depends(` in its parameters.
+  #
+  # THREAT MODEL MAPPING: Threat I2 — Unauthenticated endpoint exposes findings
+  # ----------------------------------------------------------------------------
+  - id: fastapi-route-missing-auth
+    patterns:
+      - pattern: |
+          @$APP.$METHOD(...)
+          def $FUNC(...):
+              ...
+      - pattern-not: |
+          @$APP.$METHOD(...)
+          def $FUNC(..., $AUTH: ... = Depends(...), ...):
+              ...
+      - pattern-not: |
+          @$APP.$METHOD("/healthz", ...)
+          def $FUNC(...):
+              ...
+    message: |
+      FastAPI route '$FUNC' is missing an authentication dependency.
+      Add `auth: AuthUser = Depends(verify_token)` to enforce JWT validation.
+      Exception: /healthz routes are explicitly excluded.
+    severity: ERROR
+    languages: [python]
+    metadata:
+      category: security
+      cwe: CWE-306
+      owasp: "A01:2021 - Broken Access Control"
+
+  # ----------------------------------------------------------------------------
+  # RULE 2: Detect hardcoded secrets (complementing Gitleaks)
+  #
+  # Gitleaks scans git history. Semgrep scans the CURRENT code state.
+  # Together they catch: secrets introduced today AND secrets from the past.
+  # ----------------------------------------------------------------------------
+  - id: hardcoded-secret-in-variable
+    patterns:
+      - pattern: |
+          $VAR = "$SECRET"
+      - metavariable-regex:
+          metavariable: "$VAR"
+          regex: '(?i)(password|secret|api_key|token|key|credential|auth)'
+      - metavariable-regex:
+          metavariable: "$SECRET"
+          regex: '.{8,}'  # At least 8 chars (not empty string assignments)
+    message: |
+      Potential hardcoded secret in variable '$VAR'.
+      Use environment variables or a secrets manager instead.
+      Never hardcode credentials in source code.
+    severity: ERROR
+    languages: [python]
+    metadata:
+      category: security
+      cwe: CWE-798
+      owasp: "A02:2021 - Cryptographic Failures"
+
+  # ----------------------------------------------------------------------------
+  # RULE 3: Detect subprocess calls with shell=True
+  #
+  # WHY dangerous: shell=True passes the command through the shell interpreter.
+  # If any part of the command is user-controlled, it becomes a command injection.
+  # Example: subprocess.run(f"ls {user_input}", shell=True)
+  # Attacker sends: `; rm -rf /`
+  # ----------------------------------------------------------------------------
+  - id: subprocess-shell-true
+    pattern: subprocess.$FUNC(..., shell=True, ...)
+    message: |
+      subprocess call with shell=True detected. This is a command injection risk.
+      Use a list of arguments instead: subprocess.run(["ls", "-la", path])
+      Never pass shell=True with any user-controlled input.
+    severity: WARNING
+    languages: [python]
+    metadata:
+      category: security
+      cwe: CWE-78
+      owasp: "A03:2021 - Injection"
+
+  # ----------------------------------------------------------------------------
+  # RULE 4: Detect debug=True in production code
+  #
+  # FastAPI/Uvicorn with debug=True enables:
+  # - Stack traces in HTTP error responses (information disclosure)
+  # - Auto-reload (DoS if triggered repeatedly)
+  # ----------------------------------------------------------------------------
+  - id: debug-mode-enabled
+    patterns:
+      - pattern: uvicorn.run(..., debug=True, ...)
+      - pattern: app = FastAPI(..., debug=True, ...)
+    message: |
+      Debug mode is enabled. This must NEVER be deployed to production.
+      Debug mode exposes stack traces in HTTP responses (CWE-209).
+      Control debug mode via environment variable: debug=os.getenv("DEBUG", "false") == "true"
+    severity: WARNING
+    languages: [python]
+    metadata:
+      category: security
+      cwe: CWE-209
+      owasp: "A05:2021 - Security Misconfiguration"
+
+  # ----------------------------------------------------------------------------
+  # RULE 5: Detect logging of potentially sensitive HTTP request data
+  #
+  # Logging entire request bodies, headers, or query params risks logging:
+  # - Bearer tokens (from Authorization header)
+  # - Passwords (in request bodies)
+  # - PII (in query params)
+  # ----------------------------------------------------------------------------
+  - id: logging-request-sensitive-data
+    patterns:
+      - pattern: logging.$LEVEL(..., $REQUEST.headers, ...)
+      - pattern: logging.$LEVEL(..., $REQUEST.body, ...)
+    message: |
+      Logging raw request headers or body may expose sensitive data (tokens, passwords, PII).
+      Log only specific, non-sensitive fields. Mask or omit Authorization headers.
+    severity: WARNING
+    languages: [python]
+    metadata:
+      category: security
+      cwe: CWE-532
+      owasp: "A09:2021 - Security Logging and Monitoring Failures"

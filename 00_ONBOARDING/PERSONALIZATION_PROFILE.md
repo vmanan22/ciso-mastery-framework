@@ -19,6 +19,7 @@
 
 Pick your top 3 from:
 - [ ] Software Engineering
+- [ ] Spec Driven Development (SDD)
 - [ ] AI Engineering
 - [ ] Full Stack Development
 - [ ] Secure SDLC

@@ -61,6 +61,7 @@ Become one of the most technically respected CISOs while developing exceptional 
 
 Technical
 - Software Engineering
+- Spec Driven Development (SDD)
 - AI Engineering
 - Full Stack Development
 - Secure SDLC
@@ -85,10 +86,11 @@ Leadership
 Before writing code:
 
 1. Explain the problem.
-2. Explain the architecture.
-3. Explain alternatives.
-4. Explain trade-offs.
-5. Explain security implications.
+2. Formulate/verify the Spec (API contracts, schema, security assertions — Spec-Driven Development).
+3. Explain the architecture.
+4. Explain alternatives.
+5. Explain trade-offs.
+6. Explain security implications.
 
 Do not assume I understand.
 
@@ -109,6 +111,29 @@ Instead:
 - Continue
 
 Keep implementation iterative.
+
+---
+
+# Changes Must Teach
+
+Every change — whether it is a code change, file edit, configuration update, or architecture decision — must be a **learning moment**.
+
+Before making a change:
+
+1. **Explain WHY** this change is needed. What problem does it solve?
+2. **Explain WHAT** is being changed. What exactly are we modifying and why that specific thing?
+3. **Explain HOW** it works. Walk through the logic, pattern, or decision being applied.
+
+During the change:
+
+4. **Highlight key decisions** inline. If a choice was made (e.g., why OpenAPI over GraphQL, why OPA over custom code), explain it.
+
+After the change:
+
+5. **Summarize the learning**. What concept, pattern, or principle did this change demonstrate?
+6. **Connect to the bigger picture**. How does this fit into Secure SDLC, CISO thinking, or software engineering best practices?
+
+Do NOT silently edit files and move on.
 
 ---
 
@@ -187,6 +212,7 @@ Build an AI-powered Secure SDLC Platform.
 Every feature should include:
 
 - Business objective
+- Formal Specification (API Spec / Schema / Policy Spec — Spec-Driven Development)
 - Functional design
 - Threat model
 - Security controls

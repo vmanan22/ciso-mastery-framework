@@ -1,0 +1,37 @@
+# ------------------------------------------------------------------------------
+# DevSecOps SSDLC Shift-Left Pre-Commit Hook Configuration
+# Prevents sensitive secrets, vulnerable IaC, and unformatted code from commit
+# ------------------------------------------------------------------------------
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: check-merge-conflict
+      - id: check-yaml
+      - id: check-json
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.2
+    hooks:
+      - id: gitleaks
+        name: 🔒 Gitleaks (Secret & Credential Detection)
+        description: Detect hardcoded secrets, AWS keys, and API tokens before commit
+
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.12.0
+    hooks:
+      - id: hadolint
+        name: 🐳 Hadolint (Dockerfile Security Linter)
+        description: Enforce container build best practices and non-root USER checks
+
+  - repo: https://github.com/bridgecrewio/checkov
+    rev: 3.2.30
+    hooks:
+      - id: checkov
+        name: 🛡️ Checkov (IaC Static Security Analysis)
+        args: ['-d', '07_PRIMARY_PROJECT/iac']

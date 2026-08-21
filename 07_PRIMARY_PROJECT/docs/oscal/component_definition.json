@@ -1,0 +1,50 @@
+{
+  "component-definition": {
+    "uuid": "8b52f14c-1234-4b5a-9a99-0123456789ab",
+    "metadata": {
+      "title": "AI-Powered Secure SDLC Platform Component Security Definition",
+      "last-modified": "2026-08-07T21:00:00Z",
+      "version": "1.0.0",
+      "oscal-version": "1.1.0",
+      "remarks": "Standardized NIST SP 800-53 Rev 5 control implementations in machine-readable OSCAL."
+    },
+    "components": [
+      {
+        "uuid": "d3b07384-d113-46bc-a829-123456789abc",
+        "type": "software",
+        "title": "SSDLC CI/CD Pipeline & IaC Policy Engine",
+        "description": "Automated DevSecOps pipeline with SAST, SCA, Trivy, OPA Rego policy controls, and Distroless packaging.",
+        "purpose": "Enforce automated security quality gates and shift-left compliance prior to production cloud deployment.",
+        "control-implementations": [
+          {
+            "uuid": "f4b07384-e224-47bc-b930-23456789abcd",
+            "source": "https://github.com/usnistgov/oscal-content/blob/master/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json",
+            "description": "NIST SP 800-53 Control Implementation Mapping",
+            "implemented-controls": [
+              {
+                "control-id": "sa-11",
+                "description": "Developer Security Testing and Evaluation (SAST/SCA/DAST gating)",
+                "implementation-status": { "state": "implemented" }
+              },
+              {
+                "control-id": "si-7",
+                "description": "Software, Firmware, and Information Integrity (Cosign container signing & Syft SBOM)",
+                "implementation-status": { "state": "implemented" }
+              },
+              {
+                "control-id": "ac-6",
+                "description": "Least Privilege (OIDC short-lived credentials & non-root containers)",
+                "implementation-status": { "state": "implemented" }
+              },
+              {
+                "control-id": "cm-6",
+                "description": "Configuration Settings (OPA Rego Policy-as-Code & Kyverno Admission Controls)",
+                "implementation-status": { "state": "implemented" }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
