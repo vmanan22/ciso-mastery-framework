@@ -37,7 +37,7 @@ output "kms_key_ring" {
 
 output "deployment_summary" {
   description = "Human-readable summary of deployed resources"
-  value = <<-EOT
+  value       = <<-EOT
     ============================================================
     SSDLC Platform — GCP Dev Deployment Summary
     ============================================================

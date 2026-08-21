@@ -161,8 +161,8 @@ resource "google_storage_bucket" "ssdlc_artifacts" {
   # COST CONTROL: Auto-delete old versions after 30 days
   lifecycle_rule {
     condition {
-      age            = 30
-      with_state     = "ARCHIVED" # Only applies to non-current (versioned) objects
+      age        = 30
+      with_state = "ARCHIVED" # Only applies to non-current (versioned) objects
     }
     action {
       type = "Delete"
