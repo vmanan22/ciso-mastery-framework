@@ -1,6 +1,6 @@
 # ==============================================================================
 # Hardened Multi-Stage Dockerfile (Zero-CVE & Minimal Attack Surface)
-# Target: Distroless Non-Root Runtime
+# Target: Minimal Non-Root Hardened Runtime
 # ==============================================================================
 
 # ------------------------------------------------------------------------------
@@ -24,23 +24,31 @@ RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 COPY app/requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip wheel && \
+RUN pip install --no-cache-dir --upgrade pip wheel setuptools && \
     pip install --no-cache-dir -r requirements.txt && \
     pip uninstall -y pip wheel setuptools 2>/dev/null || true
 
 COPY app/ .
 
 # ------------------------------------------------------------------------------
-# Stage 2: Minimal Distroless Production Runtime (Zero Shell, Non-Root)
+# Stage 2: Hardened Non-Root Production Runtime
 # ------------------------------------------------------------------------------
-# Google Distroless contains ONLY Python and standard libs. No bash/sh, apt, curl.
-FROM gcr.io/distroless/python3-debian12:nonroot AS runner
+FROM python:3.11-slim-bookworm AS runner
 
 WORKDIR /app
 
+# Apply latest Debian security updates to eliminate base OS CVEs
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    rm -rf /var/lib/apt/lists/*
+
+# Create non-root unprivileged user (UID 65532)
+RUN groupadd -g 65532 nonroot && \
+    useradd -u 65532 -g 65532 -m -s /sbin/nologin nonroot
+
 # Copy virtual environment and app from builder
-COPY --from=builder /opt/venv /opt/venv
-COPY --from=builder /app /app
+COPY --from=builder --chown=65532:65532 /opt/venv /opt/venv
+COPY --from=builder --chown=65532:65532 /app /app
 
 ENV PATH="/opt/venv/bin:$PATH" \
     PYTHONPATH="/opt/venv/lib/python3.11/site-packages"
@@ -50,8 +58,8 @@ USER nonroot:nonroot
 
 EXPOSE 8080
 
-# Health check using python urllib (no curl available in distroless!)
+# Health check using python urllib
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-  CMD ["/usr/bin/python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/healthz')"]
+  CMD ["/opt/venv/bin/python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/healthz')"]
 
-ENTRYPOINT ["/usr/bin/python3", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+ENTRYPOINT ["/opt/venv/bin/uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
