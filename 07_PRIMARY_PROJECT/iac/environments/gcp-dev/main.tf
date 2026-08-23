@@ -113,13 +113,12 @@ resource "google_kms_crypto_key" "ssdlc_storage_key" {
 # - Delete keys
 # - View key metadata
 # ==============================================================================
-data "google_storage_project_service_account" "gcs_account" {}
-
 resource "google_kms_crypto_key_iam_member" "gcs_kms_binding" {
   crypto_key_id = google_kms_crypto_key.ssdlc_storage_key.id
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
-  member        = "serviceAccount:${data.google_storage_project_service_account.gcs_account.email_address}"
+  member        = "serviceAccount:${var.gcs_service_account_email}"
 }
+
 
 # ==============================================================================
 # RESOURCE 4: Cloud Storage Bucket

@@ -211,6 +211,8 @@ jobs:
           TF_VAR_pipeline_service_account: "ssdlc-pipeline@ssdlc-platform-dev.iam.gserviceaccount.com"
 
       - name: "Generate Terraform Plan JSON for OPA Gate"
+        env:
+          GOOGLE_OAUTH_ACCESS_TOKEN: "ya29.mock_token_for_offline_dry_run_evaluation"
         run: |
           cd 07_PRIMARY_PROJECT/iac/environments/gcp-dev
           terraform plan \
@@ -220,6 +222,7 @@ jobs:
             -var="pipeline_service_account=ssdlc-pipeline@ssdlc-platform-dev.iam.gserviceaccount.com"
           terraform show -json tfplan.binary > /tmp/tfplan.json
           echo "✅ Authentic Terraform Plan JSON generated for OPA evaluation"
+
 
       - name: "OPA / Conftest — Policy-as-Code Evaluation (Fail-Closed)"
         run: |
