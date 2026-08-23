@@ -1,49 +1,30 @@
-# Hall of Pain 🔥
+# Technical Retrospectives & Failure Case Studies
 
-> Every mistake is a lesson. Every lesson is progress. Track them here ruthlessly.
->
-> **Rule**: No vague entries. Be specific about what happened, why, and what you'll do differently.
+> Objective analysis of real-world failures, root causes, and prevention strategies.
 
 ---
 
-## Mistake Log
+## 📋 Case Study Registry
 
-| # | Date | Category | What Happened | Root Cause | Lesson Learned | Prevention Strategy |
-|---|------|----------|--------------|------------|----------------|---------------------|
-| 1 | 2026-08-21 | Process / CI | Workflows placed in subdirectories were not picked up by GitHub Actions | GitHub Actions strictly mandates workflows in root `.github/workflows/` | GitHub repository root is the only valid location for Actions workflows | Always verify workflow path is `.github/workflows/*.yml` at workspace root |
-| 2 | 2026-08-21 | Security / Git | Pushing workflow file rejected by remote | Git CLI token lacked explicit `workflow` OAuth scope | GitHub requires separate `workflow` scope to prevent unauthorized pipeline tampering | Run `gh auth refresh -s workflow` when managing CI/CD workflows |
-| 3 | 2026-08-21 | Security / Code | Hardcoded API key found in local client script | Placeholder key left in during quick prototyping | Secrets in source files get committed if not checked | Run automated pre-commit scanners (`gitleaks`, `semgrep`) before every commit |
-
-
----
-
-## Categories
-
-- **Security** — Missed vulnerability, weak control, insecure design
-- **Architecture** — Poor design decision, scalability miss, wrong pattern
-- **Code** — Bug, anti-pattern, poor readability, missing tests
-- **Communication** — Unclear explanation, wrong audience level, missing context
-- **Process** — Skipped step, wrong prioritization, scope creep
-- **Knowledge Gap** — Didn't know a concept, used wrong terminology
+| # | Date | Category | Incident / Failure | Root Cause | Systemic Prevention Strategy |
+|:---:|:---:|:---:|:---|:---|:---|
+| **1** | 2026-08-21 | Process / CI | Workflows placed in subdirectories were not triggered by GitHub Actions | GitHub Actions runner strictly parses `.github/workflows/*.yml` at root | Enforce pipeline linter in CI to verify workflow placement |
+| **2** | 2026-08-21 | Security / Git | Pushing workflow modifications was rejected by GitHub remote | Git CLI personal token lacked explicit `workflow` OAuth scope | Restrict `workflow` scope to authorized CI maintainers; use keyless OIDC |
+| **3** | 2026-08-21 | Security / Code | Hardcoded API key detected in local prototyping script | Placeholder secret committed during rapid iteration | Shift-left pre-commit hooks (`gitleaks`, `semgrep`) blocking commits before push |
+| **4** | 2026-08-23 | CI / Governance | CI pipeline reported green despite scanner failures | Trailing `\|\| true` and `--soft-fail` masked scanner exit codes | Implemented `scripts/verify_fail_closed.py` and fail-closed gates |
 
 ---
 
-## Anti-Patterns I've Caught Myself Doing
+## 🔬 Failure Categories
 
-| Anti-Pattern | Times Caught | Last Occurrence | Status |
-|-------------|-------------|----------------|--------|
-| _e.g., "Jumping to code before understanding the problem"_ | _0_ | _N/A_ | 🔴 Active |
-
----
-
-## Hall of Fame (Graduated Lessons)
-
-> When a lesson has been fully internalized (3+ weeks without repeating), move it here.
-
-| # | Original Mistake | Lesson | Graduated Date |
-|---|-----------------|--------|----------------|
-| | | | |
+* **Security**: Missed vulnerability, weak control, unauthorized access, insecure default.
+* **Architecture**: Anti-pattern, unmitigated threat, excessive coupling, lack of trust boundary.
+* **Code Quality**: Missing unit/regression tests, edge-case failure, unhandled exception.
+* **Supply Chain**: Unpinned action, mutable dependency tag, unverified signature.
+* **Pipeline Integrity**: False-green masking, skipped prerequisite, unverified deployment.
 
 ---
 
-*Update this after every session, weekly challenge, and code review.*
+## 📝 Submitting a New Retrospective
+
+To add a new retrospective or failure case study, use [`templates/RETROSPECTIVE_TEMPLATE.md`](file:///Users/mananvora/CLOS_Kickoff_Mission/templates/RETROSPECTIVE_TEMPLATE.md).

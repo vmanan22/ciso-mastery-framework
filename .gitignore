@@ -39,3 +39,16 @@ env/
 .vscode/
 *.swp
 *.swo
+
+# Private Local Learner Progress (Git-Ignored)
+.clos-local/
+
+# Test & Coverage Caches
+.pytest_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.sarif
+bandit-results.json
+
