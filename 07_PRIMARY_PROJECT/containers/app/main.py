@@ -1,9 +1,29 @@
-from fastapi import FastAPI, status
+"""
+Secure Microservice API — Hardened FastAPI Implementation
+Enforces:
+- Bearer JWT Authentication (OpenAPI 3.1 Contract Compliance)
+- OWASP Recommended Security Headers
+- Strict CORS Policy
+- Unauthenticated Healthz Probe
+"""
+
+import os
+from typing import Optional
+from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
+try:
+    from .jwt_validator import verify_token
+except ImportError:
+    from jwt_validator import verify_token
+
+# Configuration
+JWT_SECRET = os.environ.get("JWT_SECRET", "clos-hardened-dev-secret-key-change-in-prod")
 
 app = FastAPI(
     title="Secure Microservice API",
-    description="Production-grade secure service implementing OWASP security controls",
+    description="Production-grade secure service implementing OWASP security controls & Bearer JWT authentication",
     version="1.0.0"
 )
 
@@ -16,8 +36,11 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type"],
 )
 
+security = HTTPBearer(auto_error=False)
+
+
 @app.middleware("http")
-async def add_security_headers(request, call_next):
+async def add_security_headers(request: Request, call_next):
     response = await call_next(request)
     # Enforce Hardened Security Headers (OWASP Recommendations)
     response.headers["X-Content-Type-Options"] = "nosniff"
@@ -27,17 +50,50 @@ async def add_security_headers(request, call_next):
     response.headers["X-XSS-Protection"] = "1; mode=block"
     return response
 
+
+def verify_jwt_token(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)) -> dict:
+    """
+    Validates the Bearer JWT token against signature and expiration.
+    Returns decoded token claims on success; raises 401 Unauthorized otherwise.
+    """
+    if credentials is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing Bearer authentication token",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+    
+    token = credentials.credentials
+    is_valid, claims, error_msg = verify_token(token, JWT_SECRET)
+    
+    if not is_valid:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=error_msg or "Invalid authentication token",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+
+    return claims
+
+
 @app.get("/healthz", status_code=status.HTTP_200_OK)
 def health_check():
+    """Unauthenticated health & liveness probe."""
     return {"status": "healthy", "service": "secure-app", "version": "1.0.0"}
 
-@app.get("/api/v1/data")
-def get_secure_data():
+
+@app.get("/api/v1/data", status_code=status.HTTP_200_OK)
+def get_secure_data(token_claims: dict = Depends(verify_jwt_token)):
+    """
+    Protected data endpoint requiring authenticated Bearer JWT.
+    """
     return {
         "message": "Secure payload retrieved successfully",
         "encryption": "KMS-AES-256",
-        "auth": "OIDC-Verified"
+        "auth": "Bearer-JWT-Verified",
+        "subject": token_claims.get("sub", "authenticated-user")
     }
+
 
 if __name__ == "__main__":
     import uvicorn
