@@ -1,20 +1,14 @@
 # ==============================================================================
-# SSDLC Platform — Complete 6-Stage GitHub Actions Pipeline
+# CLOS — 6-Stage Fail-Closed DevSecOps Pipeline
 #
-# LEARNING: Read this file top-to-bottom as a security story.
-# Each stage is a gate. A failed gate stops ALL subsequent stages.
-# Code cannot reach GCP unless ALL 5 security stages pass first.
-#
-# STAGE MAP:
-#   1. Secret Scan (Gitleaks)          → blocks on any credential leak
-#   2. SAST Code Scan (Semgrep+Bandit) → blocks on HIGH/CRITICAL code vulns
-#   3. IaC + OPA Policy Gate           → blocks on misconfig or policy violation
-#   4. Container Security + SBOM       → blocks on CVEs, generates supply chain proof
-#   5. GCP Terraform Plan              → shows what WILL deploy (dry run)
-#   6. GCP Terraform Apply             → ACTUAL deployment (main branch only)
+# DESIGN INVARIANTS:
+# 1. Fail Closed: No '|| true', no '--soft-fail', no 'exit-code: 0' on security gates.
+# 2. Immutable Proof: Every gate generates and retains machine-readable evidence (SARIF/JSON/SPDX).
+# 3. Least Privilege: Default read-only permissions; write granted strictly where needed.
+# 4. Zero False-Green: Skipped cloud deployment is explicitly reported as SKIPPED, not PASS.
 # ==============================================================================
 
-name: "SSDLC — Complete 6-Stage Security Pipeline"
+name: "CLOS — 6-Stage Fail-Closed Security Pipeline"
 
 on:
   push:
@@ -32,19 +26,40 @@ permissions:
 
 jobs:
   # ============================================================================
+  # REGRESSION GATE: Pipeline Integrity & Anti-Masking Check
+  # ============================================================================
+  pipeline-integrity-check:
+    name: "🛡️ Pipeline Integrity — Fail-Closed Verifier"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: "Checkout Source Code"
+        uses: actions/checkout@v4
+
+      - name: "Setup Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: "Verify No Failure-Masking Patterns in Workflows"
+        run: |
+          python3 scripts/verify_fail_closed.py
+
+  # ============================================================================
   # STAGE 1: SECRET LEAK SCAN (Gitleaks)
   # ============================================================================
   stage-1-secret-scan:
     name: "🔒 Stage 1 — Secret Leak Scan (Gitleaks)"
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    needs: [pipeline-integrity-check]
     steps:
       - name: "Checkout — Full Git History"
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: "Gitleaks — Scan All Commits for Secrets"
+      - name: "Gitleaks — Deep Commit History Scan"
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -69,30 +84,27 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: "Install SAST Tools (Semgrep & Bandit)"
+      - name: "Install SAST Toolchain"
         run: |
           python3 -m pip install --upgrade pip
           pip install semgrep bandit[toml]
 
-      - name: "Bandit — Python Security Linter"
+      - name: "Bandit — Python Security Analysis"
         run: |
-          echo "=== Running Bandit SAST scan on Python source ==="
-          bandit \
-            -r 07_PRIMARY_PROJECT/containers/app/ \
-            -ll \
-            --format json \
-            -o bandit-results.json || true
+          echo "=== Running Bandit Security Linter ==="
+          # Generate JSON report; Bandit exits non-zero if issues are found
+          bandit -r 07_PRIMARY_PROJECT/containers/app/ -ll --format json -o bandit-results.json --exit-zero
           cat bandit-results.json
 
-      - name: "Semgrep — OWASP Top 10 + Custom Security Rules"
+      - name: "Semgrep — OWASP Top 10 & Custom Security Rules"
         run: |
-          echo "=== Running Semgrep SAST scan ==="
+          echo "=== Running Semgrep AST Analysis ==="
           semgrep scan \
             --config=auto \
             --config=07_PRIMARY_PROJECT/.semgrep.yml \
             --sarif \
             --output=semgrep.sarif \
-            07_PRIMARY_PROJECT/containers/app/ || true
+            07_PRIMARY_PROJECT/containers/app/
 
       - name: "Upload Semgrep SARIF to GitHub Security"
         uses: github/codeql-action/upload-sarif@v3
@@ -102,7 +114,17 @@ jobs:
           sarif_file: semgrep.sarif
           category: semgrep
 
-      - name: "Evaluate SAST Quality Gate"
+      - name: "Upload SAST Reports as Artifacts"
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sast-evidence
+          path: |
+            bandit-results.json
+            semgrep.sarif
+          retention-days: 30
+
+      - name: "Evaluate SAST Quality Gate (Fail-Closed)"
         run: |
           python3 - <<'EOF'
           import json, sys, os
@@ -128,14 +150,14 @@ jobs:
                           failed = True
 
           if failed:
-              print("\n🚨 SAST SECURITY GATE: FAILED — Fix High/Error findings before merge.")
+              print("\n🚨 SAST SECURITY GATE: FAILED (Unresolved Critical/High Issues)")
               sys.exit(1)
           else:
-              print("\n✅ SAST SECURITY GATE: PASSED (0 Critical/High issues)")
+              print("\n✅ SAST SECURITY GATE: PASSED (0 Critical/High findings)")
           EOF
 
   # ============================================================================
-  # STAGE 3: IAC SECURITY + REAL OPA POLICY GATE
+  # STAGE 3: IAC SECURITY & OPA POLICY GATE
   # ============================================================================
   stage-3-iac-policy:
     name: "🏗️ Stage 3 — IaC Scan + OPA Policy Gate"
@@ -146,7 +168,7 @@ jobs:
       - name: "Checkout Source Code"
         uses: actions/checkout@v4
 
-      - name: "Setup Python (for Checkov)"
+      - name: "Setup Python & Security Linters"
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -156,18 +178,34 @@ jobs:
         with:
           terraform_version: "1.9.0"
 
-      - name: "Terraform Format Check"
+      - name: "Terraform Format Verification"
         run: |
-          echo "=== Checking Terraform formatting ==="
+          echo "=== Enforcing Terraform formatting standards ==="
           terraform fmt -check -recursive 07_PRIMARY_PROJECT/iac/
-        continue-on-error: false
 
-      - name: "Checkov — IaC Misconfiguration Scan"
+      - name: "Install Checkov & IaC Scanners"
+        run: pip install checkov
+
+      - name: "Checkov — IaC Security Scan (Fail-Closed)"
         run: |
-          pip install checkov
-          checkov -d 07_PRIMARY_PROJECT/iac/environments/gcp-dev --framework terraform --skip-check CKV_GCP_62 --soft-fail
+          echo "=== Running Checkov IaC Security Analysis ==="
+          checkov \
+            -d 07_PRIMARY_PROJECT/iac/environments/gcp-dev \
+            --framework terraform \
+            --skip-check CKV_GCP_62 \
+            --output cli \
+            --output sarif \
+            --output-file-path checkov.sarif
 
-      - name: "Setup OPA & Conftest"
+      - name: "Upload Checkov SARIF"
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        continue-on-error: true
+        with:
+          sarif_file: checkov.sarif
+          category: checkov-iac
+
+      - name: "Setup OPA & Conftest Policy Engine"
         run: |
           curl -L -o /usr/local/bin/opa https://openpolicyagent.org/downloads/v0.68.0/opa_linux_amd64_static
           chmod +x /usr/local/bin/opa
@@ -175,7 +213,7 @@ jobs:
             | tar xzf - -C /usr/local/bin conftest
           conftest --version
 
-      - name: "Terraform Init (for plan)"
+      - name: "Terraform Init (Dry-Run Mode)"
         run: |
           cd 07_PRIMARY_PROJECT/iac/environments/gcp-dev
           terraform init -backend=false
@@ -183,30 +221,27 @@ jobs:
           TF_VAR_project_id: "ssdlc-platform-dev"
           TF_VAR_pipeline_service_account: "ssdlc-pipeline@ssdlc-platform-dev.iam.gserviceaccount.com"
 
-      - name: "Generate Terraform Plan JSON for OPA"
+      - name: "Generate Terraform Plan JSON for OPA Gate"
         run: |
           cd 07_PRIMARY_PROJECT/iac/environments/gcp-dev
           terraform plan \
             -out=tfplan.binary \
             -refresh=false \
             -var="project_id=ssdlc-platform-dev" \
-            -var="pipeline_service_account=ssdlc-pipeline@ssdlc-platform-dev.iam.gserviceaccount.com" \
-            2>/dev/null || true
-          terraform show -json tfplan.binary > /tmp/tfplan.json 2>/dev/null || \
-            echo '{"planned_values":{"root_module":{"resources":[]}}}' > /tmp/tfplan.json
-          echo "Plan JSON generated for OPA evaluation"
-        continue-on-error: true
+            -var="pipeline_service_account=ssdlc-pipeline@ssdlc-platform-dev.iam.gserviceaccount.com"
+          terraform show -json tfplan.binary > /tmp/tfplan.json
+          echo "✅ Authentic Terraform Plan JSON generated for OPA evaluation"
 
-      - name: "OPA / Conftest — Policy-as-Code Evaluation"
+      - name: "OPA / Conftest — Policy-as-Code Evaluation (Fail-Closed)"
         run: |
-          echo "=== Running OPA Policy-as-Code evaluation ==="
+          echo "=== Evaluating OPA Rego Security Invariants ==="
           conftest test /tmp/tfplan.json \
             --policy 07_PRIMARY_PROJECT/policies/iac_policies/ \
             --namespace main \
-            --output table || true
+            --output table
 
   # ============================================================================
-  # STAGE 4: CONTAINER SECURITY + SBOM + COSIGN
+  # STAGE 4: CONTAINER SECURITY, SBOM & COSIGN
   # ============================================================================
   stage-4-container-security:
     name: "🐳 Stage 4 — Container Build, CVE Scan, SBOM + Cosign"
@@ -243,16 +278,16 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/ssdlc-app:${{ github.sha }}
             ghcr.io/${{ github.repository_owner }}/ssdlc-app:latest
 
-      - name: "Trivy — Container CVE Scan"
+      - name: "Trivy — Container CVE Scan (Fail-Closed on High/Critical)"
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: "ghcr.io/${{ github.repository_owner }}/ssdlc-app:${{ github.sha }}"
           format: "table"
-          exit-code: "0"
+          exit-code: "1"
           ignore-unfixed: true
           severity: "CRITICAL,HIGH"
 
-      - name: "Syft — Generate SBOM"
+      - name: "Syft — Generate Software Bill of Materials (SBOM)"
         uses: anchore/sbom-action@v0
         with:
           image: "ghcr.io/${{ github.repository_owner }}/ssdlc-app:${{ github.sha }}"
@@ -275,12 +310,12 @@ jobs:
           docker push ghcr.io/${{ github.repository_owner }}/ssdlc-app:${{ github.sha }}
           docker push ghcr.io/${{ github.repository_owner }}/ssdlc-app:latest
 
-      - name: "Cosign — Keyless Sign Container Image"
+      - name: "Cosign — Keyless Cryptographic Signature"
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           cosign sign --yes \
             ghcr.io/${{ github.repository_owner }}/ssdlc-app:${{ github.sha }}
-          echo "✅ Container image signed. Verifiable via Sigstore Rekor transparency log."
+          echo "✅ Container image cryptographically signed via Sigstore Fulcio/Rekor."
 
   # ============================================================================
   # STAGE 5: GCP TERRAFORM PLAN (Keyless OIDC Auth)
@@ -298,24 +333,32 @@ jobs:
       - name: "Checkout Source Code"
         uses: actions/checkout@v4
 
+      - name: "Check Cloud Credentials Availability"
+        id: check-creds
+        run: |
+          if [ -z "${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}" ]; then
+            echo "has_creds=false" >> $GITHUB_OUTPUT
+            echo "::notice::GCP Workload Identity Provider not configured in repository secrets. Cloud plan skipped."
+          else
+            echo "has_creds=true" >> $GITHUB_OUTPUT
+          fi
+
       - name: "Authenticate to GCP via Workload Identity Federation"
+        if: steps.check-creds.outputs.has_creds == 'true'
         uses: google-github-actions/auth@v2
-        if: "${{ env.GCP_WIF != '' }}"
-        env:
-          GCP_WIF: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
       - name: "Setup Terraform"
+        if: steps.check-creds.outputs.has_creds == 'true'
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.9.0"
 
-      - name: "Terraform Init & Plan"
-        if: "${{ env.GCP_WIF != '' }}"
+      - name: "Terraform Init & Plan (Fail-Closed)"
+        if: steps.check-creds.outputs.has_creds == 'true'
         env:
-          GCP_WIF: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
           TF_VAR_pipeline_service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
         run: |
@@ -327,14 +370,14 @@ jobs:
             -var="pipeline_service_account=${{ secrets.GCP_SERVICE_ACCOUNT }}"
 
   # ============================================================================
-  # STAGE 6: GCP TERRAFORM APPLY
+  # STAGE 6: GCP TERRAFORM APPLY (Deploy to Cloud)
   # ============================================================================
   stage-6-gcp-apply:
     name: "🚀 Stage 6 — GCP Terraform Apply (Deploy to Cloud)"
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: [stage-5-gcp-plan]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && secrets.GCP_WORKLOAD_IDENTITY_PROVIDER != ''
     permissions:
       contents: read
       id-token: write
@@ -344,9 +387,6 @@ jobs:
 
       - name: "Authenticate to GCP via Workload Identity Federation"
         uses: google-github-actions/auth@v2
-        if: "${{ env.GCP_WIF != '' }}"
-        env:
-          GCP_WIF: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
@@ -356,10 +396,8 @@ jobs:
         with:
           terraform_version: "1.9.0"
 
-      - name: "Terraform Apply — Deploy to GCP"
-        if: "${{ env.GCP_WIF != '' }}"
+      - name: "Terraform Apply — Deploy Verified Infrastructure"
         env:
-          GCP_WIF: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
           TF_VAR_pipeline_service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
         run: |
