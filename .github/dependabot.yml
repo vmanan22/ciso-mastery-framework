@@ -1,0 +1,22 @@
+version: 2
+updates:
+  # Maintain GitHub Actions dependencies
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  # Maintain Python dependencies
+  - package-ecosystem: "pip"
+    directory: "/07_PRIMARY_PROJECT/containers/app"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  # Maintain Terraform dependencies
+  - package-ecosystem: "terraform"
+    directory: "/07_PRIMARY_PROJECT/iac/environments/gcp-dev"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
