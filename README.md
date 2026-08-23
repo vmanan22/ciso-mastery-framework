@@ -125,14 +125,13 @@ GCP Project (ssdlc-platform-dev)
 ├── 04_HALL_OF_PAIN/           # Engineering retrospective, mistakes & lessons learned
 ├── 05_LEARNING_LOG/            # Daily session journal & concept definitions
 ├── 06_INTERVIEW_PREP/          # CISO / Director question banks and strategy guides
-├── 07_PRIMARY_PROJECT/         # AI-Powered Secure SDLC Platform
-│   ├── containers/app/         # Hardened FastAPI microservice & Dockerfile.hardened
-│   ├── docs/                   # OpenAPI 3.1 Spec & NIST OSCAL Component Definitions
-│   ├── iac/environments/       # Multi-Cloud Terraform (GCP dev + AWS dev)
-│   ├── policies/               # Policy-as-Code (OPA/Rego, Kyverno, Falco runtime)
-│   ├── scripts/                # Local shift-left scanners (run_sast_local.sh)
-│   └── THREAT_MODEL.md         # Comprehensive STRIDE Threat Model (v2.0)
-└── CLOS_Kickoff_Mission.md     # Core Mission Charter & "Changes Must Teach" principles
+└── 07_PRIMARY_PROJECT/         # AI-Powered Secure SDLC Platform
+    ├── containers/app/         # Hardened FastAPI microservice & Dockerfile.hardened
+    ├── docs/                   # OpenAPI 3.1 Spec & NIST OSCAL Component Definitions
+    ├── iac/environments/       # Multi-Cloud Terraform (GCP dev + AWS dev)
+    ├── policies/               # Policy-as-Code (OPA/Rego, Kyverno, Falco runtime)
+    ├── scripts/                # Local shift-left scanners (run_sast_local.sh)
+    └── THREAT_MODEL.md         # Comprehensive STRIDE Threat Model (v2.0)
 ```
 
 ---
