@@ -2,7 +2,7 @@
 
 <div align="center">
 
-[![DevSecOps Pipeline](https://github.com/vmanan22/CLOS_Kickoff_Mission/actions/workflows/devsecops.yml/badge.svg)](https://github.com/vmanan22/CLOS_Kickoff_Mission/actions/workflows/devsecops.yml)
+[![DevSecOps Pipeline](https://github.com/vmanan22/ciso-mastery-framework/actions/workflows/devsecops.yml/badge.svg)](https://github.com/vmanan22/ciso-mastery-framework/actions/workflows/devsecops.yml)
 [![Security Standard](https://img.shields.io/badge/Security-NIST%20SP%20800--218%20%7C%20OWASP%20SAMM-blue.svg)](https://csrc.nist.gov/publications/detail/sp/800-218/final)
 [![Spec-Driven](https://img.shields.io/badge/API%20Spec-OpenAPI%203.1-6BA539.svg)](07_PRIMARY_PROJECT/docs/openapi.yaml)
 [![Policy as Code](https://img.shields.io/badge/Policy%20as%20Code-OPA%20%2F%20Rego-magenta.svg)](07_PRIMARY_PROJECT/policies/iac_policies/)
