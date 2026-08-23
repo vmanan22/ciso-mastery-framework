@@ -92,7 +92,6 @@ jobs:
       - name: "Bandit — Python Security Analysis"
         run: |
           echo "=== Running Bandit Security Linter ==="
-          # Generate JSON report; Bandit exits non-zero if issues are found
           bandit -r 07_PRIMARY_PROJECT/containers/app/ -ll --format json -o bandit-results.json --exit-zero
           cat bandit-results.json
 
@@ -193,17 +192,7 @@ jobs:
             -d 07_PRIMARY_PROJECT/iac/environments/gcp-dev \
             --framework terraform \
             --skip-check CKV_GCP_62 \
-            --output cli \
-            --output sarif \
-            --output-file-path checkov.sarif
-
-      - name: "Upload Checkov SARIF"
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        continue-on-error: true
-        with:
-          sarif_file: checkov.sarif
-          category: checkov-iac
+            --output cli
 
       - name: "Setup OPA & Conftest Policy Engine"
         run: |
@@ -325,6 +314,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: [stage-4-container-security]
+    outputs:
+      has_creds: ${{ steps.check-creds.outputs.has_creds }}
     permissions:
       contents: read
       id-token: write
@@ -377,7 +368,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: [stage-5-gcp-plan]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && secrets.GCP_WORKLOAD_IDENTITY_PROVIDER != ''
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && needs.stage-5-gcp-plan.outputs.has_creds == 'true'
     permissions:
       contents: read
       id-token: write
