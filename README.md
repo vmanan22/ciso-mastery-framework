@@ -1,175 +1,106 @@
-# CLOS — Cybersecurity Learning & DevSecOps Operating System
+# CLOS — CISO Learning Operating System
 
 <div align="center">
 
 [![DevSecOps Pipeline](https://github.com/vmanan22/ciso-mastery-framework/actions/workflows/devsecops.yml/badge.svg)](https://github.com/vmanan22/ciso-mastery-framework/actions/workflows/devsecops.yml)
-[![Security Standard](https://img.shields.io/badge/Security-NIST%20SP%20800--218%20%7C%20OWASP%20SAMM-blue.svg)](https://csrc.nist.gov/publications/detail/sp/800-218/final)
+[![Security Standard](https://img.shields.io/badge/Security-NIST%20SSDF%20%7C%20OWASP%20SAMM-blue.svg)](https://csrc.nist.gov/publications/detail/sp/800-218/final)
 [![Spec-Driven](https://img.shields.io/badge/API%20Spec-OpenAPI%203.1-6BA539.svg)](07_PRIMARY_PROJECT/docs/openapi.yaml)
 [![Policy as Code](https://img.shields.io/badge/Policy%20as%20Code-OPA%20%2F%20Rego-magenta.svg)](07_PRIMARY_PROJECT/policies/iac_policies/)
 [![Zero-Trust Cloud](https://img.shields.io/badge/Cloud%20Auth-GCP%20OIDC%20WIF-orange.svg)](07_PRIMARY_PROJECT/iac/environments/gcp-dev/)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
-**An evidence-backed, spec-driven DevSecOps reference architecture and Technical CISO capability framework.**
+**An open, hands-on operating system for developing Technical CISOs, Security Architects, and DevSecOps Leaders.**
 
-[Architecture](07_PRIMARY_PROJECT/ARCHITECTURE.md) • [Control & Evidence Matrix](07_PRIMARY_PROJECT/CONTROL_EVIDENCE_MATRIX.md) • [SSDLC Pipeline](#-6-stage-devsecops-pipeline) • [Threat Model](07_PRIMARY_PROJECT/THREAT_MODEL.md) • [Cloud Infrastructure](#-cloud-infrastructure--zero-trust-iam) • [Repository Map](#-repository-map)
+[Charter](PROJECT_CHARTER.md) • [Roadmap](ROADMAP.md) • [Capability Model](CAPABILITY_MODEL.md) • [Architecture](07_PRIMARY_PROJECT/ARCHITECTURE.md) • [Control Evidence](07_PRIMARY_PROJECT/CONTROL_EVIDENCE_MATRIX.md)
 
 </div>
 
 ---
 
-## 🎯 Executive Overview
+## 1. What is CLOS?
 
-**CLOS (CISO Learning Operating System)** is an open, hands-on framework designed for **Technical CISOs, Security Architects, and DevSecOps Engineers**:
-
-1. **Evidence-Backed SSDLC Reference Architecture**: End-to-end implementation of a hardened, spec-driven API secured across all lifecycle phases: **Threat Modeling ➔ Spec Contract ➔ Pre-commit ➔ SAST/SCA ➔ Policy-as-Code (OPA) ➔ Keyless OIDC Cloud Deployment**.
-2. **Deterministic Evidence Chain**: Translates board-level risk frameworks (NIST SSDF, OWASP SAMM, OSCAL) into automated, verifiable tests and machine-readable evidence.
-
+**CLOS (CISO Learning Operating System)** is an open-source reference architecture and learning framework designed to develop **Technical CISOs**. It bridges the gap between high-level executive security strategy and deep technical engineering by operationalizing security across the entire lifecycle: **from secure code and zero-trust cloud platforms to machine-readable audit evidence (OSCAL) and board-level risk decisions**.
 
 ---
 
-## 🏗️ System Architecture
+## 2. Who is it for?
 
-```mermaid
-flowchart TD
-    subgraph DesignPhase["1. Design & Requirements"]
-        TM["STRIDE Threat Model\n(THREAT_MODEL.md)"] --> SPEC["OpenAPI 3.1 Contract\n(docs/openapi.yaml)"]
-    end
-
-    subgraph DevPhase["2. Development (Shift-Left)"]
-        SPEC --> CODE["Hardened FastAPI App\n(containers/app/main.py)"]
-        CODE --> HOOK["Pre-Commit Audit\n(Gitleaks Secret Scan)"]
-    end
-
-    subgraph CIPhase["3. Automated DevSecOps Pipeline (GitHub Actions)"]
-        HOOK --> S1["Stage 1: Gitleaks\n(Deep History Secret Scan)"]
-        S1 --> S2["Stage 2: SAST\n(Semgrep OWASP + Bandit Linter)"]
-        S2 --> S3["Stage 3: IaC + Policy Gate\n(Checkov + OPA/Rego Enforcement)"]
-        S3 --> S4["Stage 4: Supply Chain\n(Trivy CVE + Syft SBOM + Cosign Attestation)"]
-    end
-
-    subgraph CDPhase["4. Zero-Trust Cloud Deployment (GCP)"]
-        S4 --> S5["Stage 5: Keyless OIDC Token Exchange\n(Workload Identity Federation)"]
-        S5 --> S6["Stage 6: Terraform Apply\n(Hardened GCS + Cloud KMS CMEK)"]
-    end
-
-    classDef design fill:#1e293b,stroke:#38bdf8,stroke-width:2px,color:#fff;
-    classDef dev fill:#1e293b,stroke:#818cf8,stroke-width:2px,color:#fff;
-    classDef ci fill:#1e293b,stroke:#34d399,stroke-width:2px,color:#fff;
-    classDef cloud fill:#1e293b,stroke:#fbbf24,stroke-width:2px,color:#fff;
-
-    class TM,SPEC design;
-    class CODE,HOOK dev;
-    class S1,S2,S3,S4 ci;
-    class S5,S6 cloud;
-```
+* **Aspiring & Practicing Technical CISOs**: Security leaders seeking deep, verifiable technical fluency across cloud infrastructure, AI models, and software supply chains.
+* **Security Architects & Principal Engineers**: Designers building zero-trust systems, Policy-as-Code guardrails, and automated DevSecOps factories.
+* **DevSecOps Practitioners**: Engineers building shift-left pipelines, container hardening, SBOM generation, and keyless cloud authentication.
+* **Compliance & Risk Officers**: Professionals translating regulations (NIST SSDF, ISO 27001, SOC 2, EU AI Act) into machine-readable control evidence.
 
 ---
 
-## 🔒 6-Stage DevSecOps Pipeline
+## 3. What makes it different?
 
-The GitHub Actions workflow [`.github/workflows/devsecops.yml`](.github/workflows/devsecops.yml) enforces **strict, sequential quality gates**. Any finding blocks downstream stages:
-
-| Stage | Name | Toolchain | Security Objective |
-| :---: | :--- | :--- | :--- |
-| **1** | **Secret Scan** | `gitleaks` | Scans entire repository commit history for credentials and API keys. |
-| **2** | **SAST Code Analysis** | `semgrep` + `bandit` | AST pattern matching for OWASP Top 10 + Python injection/crypto vulnerabilities. |
-| **3** | **IaC & Policy Gate** | `checkov` + `OPA/conftest` | Evaluates Terraform plan JSON against custom Rego policies (blocks unencrypted/public resources). |
-| **4** | **Supply Chain Security** | `trivy` + `syft` + `cosign` | Scans container CVEs, exports SPDX-JSON SBOM, and signs artifacts keylessly via Sigstore. |
-| **5** | **Cloud Dry Run** | `GCP WIF` + `terraform plan` | Authenticates keylessly via GitHub OIDC; posts plan diff to pull requests. |
-| **6** | **Cloud Deployment** | `terraform apply` | Provisions CMEK-encrypted GCP infrastructure only on approved `main` branch merges. |
-
----
-
-## 🛡️ Threat Model & Policy Traceability
-
-Every infrastructure policy and pipeline gate maps directly to a verified threat in the [STRIDE Threat Matrix](07_PRIMARY_PROJECT/THREAT_MODEL.md):
-
-| Threat ID | Threat Vector | STRIDE | Automated Defense / Policy | Implementation |
-| :--- | :--- | :---: | :--- | :--- |
-| **I3** | Public Artifact Storage Exposure | **I** | `gcp_storage_security.rego` | Enforces `public_access_prevention = "enforced"` + Uniform IAM |
-| **I4** | Static Service Account Key Leak | **I** | `gcp_iam_security.rego` | Blocks `google_service_account_key` resources; mandates WIF OIDC |
-| **T3** | Dependency Supply Chain Hijack | **T** | `devsecops.yml` (Stage 4) | Generates SPDX SBOM via Syft + Cryptographic Cosign signing |
-| **T5** | Malicious Artifact Overwrite | **T** | `main.tf` | Enables Object Versioning + 30-Day automated lifecycle rules |
-| **E3** | Cloud Privilege Escalation | **E** | `gcp_iam_security.rego` | Denies `roles/owner` and `roles/editor` primitive project bindings |
-
----
-
-## ☁️ Cloud Infrastructure & Zero-Trust IAM
-
-The GCP IaC in [`07_PRIMARY_PROJECT/iac/environments/gcp-dev/`](07_PRIMARY_PROJECT/iac/environments/gcp-dev/) provisions a defense-in-depth storage baseline for **~$0.06/month**:
+The core differentiator of CLOS is the **Unbroken Evidence Chain**:
 
 ```
-GCP Project (ssdlc-platform-dev)
-├── Cloud KMS Key Ring (ssdlc-dev-keyring)
-│   └── CMEK Key (ssdlc-dev-storage-key) [AES-256, 90-Day Auto Rotation]
-│           │
-│           └── Encrypts Data-at-Rest
-│                   ▼
-└── Cloud Storage Bucket (ssdlc-artifacts-ssdlc-platform-dev-dev)
-    ├── Public Access: ENFORCED (All public ACLs disabled)
-    ├── Uniform Bucket-Level Access: ENABLED (IAM only)
-    ├── Versioning: ENABLED (Tamper-evident audit trail)
-    └── IAM Access: Least-Privilege (roles/storage.objectCreator only)
+Threat ➔ Requirement ➔ Architecture Decision ➔ Control ➔ Implementation ➔ Test ➔ Evidence ➔ Risk Metric ➔ Executive Decision
 ```
+
+In CLOS:
+* **No Unsupported Claims**: A control is never marked "implemented" or "verified" without automated tests and reproducible evidence.
+* **Fail-Closed Default**: No `|| true`, no soft-fails, and no fake test substitutes. If a scanner or policy fails, the gate fails closed.
+* **Changes Must Teach**: Every technical implementation articulates *Why* (business/risk context), *What* (technical architecture), and *How* (concrete code).
 
 ---
 
-## 🗂 Repository Map
+## 4. What works today? (Maturity: v0.1-RC)
 
-```
-.
-├── .github/workflows/          # 6-Stage DevSecOps Pipeline definition
-├── 00_ONBOARDING/              # 30-Day Technical CISO Learning Plan & Profile
-├── 01_TECHNICAL_SKILLS/        # Hands-on labs (IaC, AppSec, K8s, Cloud Security)
-├── 02_LEADERSHIP_SKILLS/       # Executive communication, board presentations, budgeting
-├── 03_WEEKLY_CHALLENGES/       # Weekly security architectural scenarios & challenges
-├── 04_HALL_OF_PAIN/           # Engineering retrospective, mistakes & lessons learned
-├── 05_LEARNING_LOG/            # Daily session journal & concept definitions
-└── 07_PRIMARY_PROJECT/         # AI-Powered Secure SDLC Platform
-    ├── containers/app/         # Hardened FastAPI microservice & Dockerfile.hardened
-    ├── docs/                   # OpenAPI 3.1 Spec & NIST OSCAL Component Definitions
-    ├── iac/environments/       # Multi-Cloud Terraform (GCP dev + AWS dev)
-    ├── policies/               # Policy-as-Code (OPA/Rego, Kyverno, Falco runtime)
-    ├── scripts/                # Local shift-left scanners (run_sast_local.sh)
-    └── THREAT_MODEL.md         # Comprehensive STRIDE Threat Model (v2.0)
-```
+The following components are fully implemented and verified via automated tests:
+
+* **Fail-Closed 6-Stage DevSecOps CI/CD**: Gitleaks secret scanning, Semgrep AST + Bandit SAST, Checkov IaC scanning, OPA Rego policy enforcement, Distroless container builds, Trivy CVE scanning, Syft SPDX SBOM generation, and keyless GCP OIDC authentication.
+* **Hardened Microservice with Bearer JWT**: RFC 7519 HMAC-SHA256 token verification, OWASP security headers (CSP, HSTS, X-Frame-Options), and unauthenticated health probes.
+* **Cloud KMS CMEK & Hardened Storage**: Terraform IaC enforcing AES-256 customer-managed encryption keys with automated 90-day rotation and uniform bucket-level access.
+* **Policy-as-Code Gate**: Open Policy Agent (OPA) Rego rules blocking unencrypted storage, public access, and dangerous IAM roles before deployment.
+* **Automated Evidence Matrix**: [CONTROL_EVIDENCE_MATRIX.md](07_PRIMARY_PROJECT/CONTROL_EVIDENCE_MATRIX.md) tracking 13 controls with direct links to automated tests.
 
 ---
 
-## 🚀 Quick Start (Local Development)
+## 5. What is planned?
 
-### 1. Run Shift-Left Security Scans Locally
-Catch vulnerabilities before pushing code:
+* **v0.2 — AI Security Engineering & MCP Broker Lab**: Zero-Trust AI Security Gateway, prompt injection classifiers, outbound PII redaction, and autonomous agent tool sandboxing.
+* **v0.3 — Technical CISO Control Plane**: Dynamic risk registers derived from CI/CD telemetry, automated DAST scanning, and executive board decision memo templates.
+* **v1.0 — Multi-Track Community Ecosystem**: Expansion across all 8 capability tracks with multi-maintainer open-source governance.
+
+*See [ROADMAP.md](ROADMAP.md) for detailed milestone milestones and release criteria.*
+
+---
+
+## 6. How does a learner start?
+
+### Local Prerequisites
+* Python 3.11+
+* Git
+* Terraform / OpenTofu (optional for cloud labs)
+
+### Run Verified Test Suites Locally
 ```bash
-# Run local SAST suite (Semgrep + Bandit + Gitleaks)
-./07_PRIMARY_PROJECT/scripts/run_sast_local.sh
-```
+# 1. Clone the repository
+git clone https://github.com/vmanan22/ciso-mastery-framework.git
+cd ciso-mastery-framework
 
-### 2. Validate Policy-as-Code Locally
-```bash
-# Test IaC against OPA Rego security policies
-conftest test 07_PRIMARY_PROJECT/iac/environments/gcp-dev/ \
-  --policy 07_PRIMARY_PROJECT/policies/iac_policies/
-```
+# 2. Run automated pipeline integrity verification
+python3 scripts/verify_fail_closed.py
 
-### 3. Deploy Cloud Baseline
-```bash
-cd 07_PRIMARY_PROJECT/iac/environments/gcp-dev
-terraform init
-terraform apply -var="project_id=ssdlc-platform-dev" -var="pipeline_service_account=ssdlc-pipeline@ssdlc-platform-dev.iam.gserviceaccount.com"
+# 3. Run all unit and cryptographic test suites
+PYTHONPATH=. python3 -m unittest discover -s tests -p "test_*.py"
+PYTHONPATH=07_PRIMARY_PROJECT python3 -m unittest discover -s 07_PRIMARY_PROJECT/tests -p "test_*.py"
 ```
 
 ---
 
-## 📜 Principles & Standards
+## 7. How can someone contribute?
 
-* **Spec-Driven Architecture**: Contracts (`openapi.yaml`, `THREAT_MODEL.md`) govern code, not the reverse.
-* **Changes Must Teach**: Every architectural decision and code change is documented with *Why*, *What*, and *How*.
-* **Zero Static Secrets**: All CI/CD authentications utilize ephemeral OIDC tokens via Cloud Workload Identity Federation.
-* **Cost Consciousness**: Built within Cloud Always-Free Tier limits.
+We welcome technical contributions that adhere to the **Evidence Chain**.
+1. Review the [Project Charter](PROJECT_CHARTER.md) and [Capability Model](CAPABILITY_MODEL.md).
+2. Choose an open issue or propose an enhancement on a separate branch.
+3. Ensure all changes include automated tests, zero failure-masking, and updated control evidence mappings.
 
 ---
 
-<div align="center">
-<b>Maintained by Manan Vora</b> • Technical CISO & Security Architecture Portfolio
-</div>
+## 📄 License
+
+This project is licensed under the [Apache-2.0 License](LICENSE).
