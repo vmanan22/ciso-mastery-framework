@@ -1,58 +1,60 @@
-# AI-Powered Secure SDLC Platform
+# Flagship Lab 01 — Secure Software Factory (v0.1)
 
-> The primary long-term project for CLOS. Treat it like a production SaaS product.
-
----
-
-## What Is This?
-
-An AI-powered platform that helps engineering teams integrate security into every phase of the software development lifecycle — from requirements to deployment.
-
-**Every feature we build will follow the full CLOS process:**
-
-1. ✅ Business objective
-2. ✅ Functional design
-3. ✅ Threat model
-4. ✅ Security controls
-5. ✅ Architecture
-6. ✅ Implementation
-7. ✅ Testing
-8. ✅ Lessons learned
+> An end-to-end reference implementation of a hardened, spec-driven DevSecOps software factory.
 
 ---
 
-## Project Documents
+## 🎯 Lab Overview & Learner Outcomes
 
-| Document | Purpose | Status |
-|----------|---------|--------|
-| [Product Vision](./PRODUCT_VISION.md) | Business objectives, users, value proposition | 📝 Draft |
-| [Architecture](./ARCHITECTURE.md) | System design, component diagram, data flows | ⬜ Not started |
-| [Threat Model](./THREAT_MODEL.md) | STRIDE-based threat analysis | ⬜ Not started |
-| [Security Controls](./SECURITY_CONTROLS.md) | Controls registry and implementation status | ⬜ Not started |
+This flagship lab demonstrates how to design, build, validate, and govern a production-grade software factory enforcing the **Evidence Chain**:
 
----
+```
+Threat ➔ Requirement ➔ Architecture Decision ➔ Control ➔ Implementation ➔ Test ➔ Evidence ➔ Risk Metric ➔ Executive Decision
+```
 
-## Tech Stack
-
-> To be decided — see [Personalization Profile](../00_ONBOARDING/PERSONALIZATION_PROFILE.md) Q3.
-
----
-
-## Source Code
-
-| Directory | Purpose |
-|-----------|---------|
-| [src/](./src/) | Application source code |
-| [tests/](./tests/) | Test suites (unit, integration, e2e) |
+### What You Will Master
+1. **Understand**: STRIDE threat modeling and NIST SP 800-218 (SSDF) requirements.
+2. **Design**: Spec-first API contracts (OpenAPI 3.1) and zero-trust cloud architecture.
+3. **Build**: Hardened FastAPI microservice, distroless non-root containers, and 6-stage fail-closed CI/CD pipelines.
+4. **Validate**: Policy-as-Code (OPA Rego), AST security scanning (Semgrep/Bandit), and automated cryptographic test suites.
+5. **Lead**: Translating validation evidence into board-level risk metrics and executive decision memos.
 
 ---
 
-## Feature Backlog
+## 📁 Lab Components
 
-| # | Feature | Phase | Status |
-|---|---------|-------|--------|
-| 1 | _To be defined after Product Vision review_ | | ⬜ |
+```
+07_PRIMARY_PROJECT/
+├── README.md                      # Lab Overview & Quickstart
+├── LAB_GUIDE.md                   # Step-by-Step 5-Stage Execution Walkthrough
+├── ARCHITECTURE.md                # C4 Architecture Model & ADR Decision Matrix
+├── THREAT_MODEL.md                # STRIDE Threat Model & Control Mappings
+├── CONTROL_EVIDENCE_MATRIX.md     # Traceable Control Status & Verification Links
+├── EXECUTIVE_DECISION_MEMO.md     # Board-Level Risk & Budget Allocation Memo
+├── containers/
+│   ├── Dockerfile.hardened        # Multi-stage Distroless Non-Root Container
+│   └── app/
+│       ├── main.py                # Hardened FastAPI App with Bearer JWT
+│       └── jwt_validator.py       # Zero-Dependency RFC 7519 JWT Engine
+├── iac/environments/gcp-dev/      # Hardened Terraform IaC (CMEK + Uniform GCS)
+├── policies/iac_policies/         # OPA / Rego Policy-as-Code Guardrails
+├── docs/
+│   ├── openapi.yaml               # OpenAPI 3.1 Spec-Driven API Contract
+│   └── oscal/                     # Machine-Readable NIST SP 800-53 OSCAL Model
+└── tests/                         # Automated Unit & Cryptographic Test Suite
+```
 
 ---
 
-*No code will be written until the Product Vision and Architecture are reviewed and approved.*
+## 🚀 Quickstart & Verification
+
+Run the entire verification suite locally in one command:
+
+```bash
+# Run fail-closed pipeline verifier and cryptographic unit tests
+python3 scripts/verify_fail_closed.py && \
+PYTHONPATH=. python3 -m unittest discover -s tests -p "test_*.py" && \
+PYTHONPATH=07_PRIMARY_PROJECT python3 -m unittest discover -s 07_PRIMARY_PROJECT/tests -p "test_*.py"
+```
+
+*For complete step-by-step instructions, see [LAB_GUIDE.md](LAB_GUIDE.md).*
