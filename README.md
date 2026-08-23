@@ -7,11 +7,11 @@
 [![Spec-Driven](https://img.shields.io/badge/API%20Spec-OpenAPI%203.1-6BA539.svg)](07_PRIMARY_PROJECT/docs/openapi.yaml)
 [![Policy as Code](https://img.shields.io/badge/Policy%20as%20Code-OPA%20%2F%20Rego-magenta.svg)](07_PRIMARY_PROJECT/policies/iac_policies/)
 [![Zero-Trust Cloud](https://img.shields.io/badge/Cloud%20Auth-GCP%20OIDC%20WIF-orange.svg)](07_PRIMARY_PROJECT/iac/environments/gcp-dev/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
-**An enterprise-grade, spec-driven DevSecOps reference architecture and Technical CISO operational playbook.**
+**An evidence-backed, spec-driven DevSecOps reference architecture and Technical CISO capability framework.**
 
-[Architecture](#-system-architecture) • [SSDLC Pipeline](#-6-stage-devsecops-pipeline) • [Threat Model](#-threat-model--policy-traceability) • [Cloud Infrastructure](#-cloud-infrastructure--zero-trust-iam) • [Repository Map](#-repository-map)
+[Architecture](07_PRIMARY_PROJECT/ARCHITECTURE.md) • [Control & Evidence Matrix](07_PRIMARY_PROJECT/CONTROL_EVIDENCE_MATRIX.md) • [SSDLC Pipeline](#-6-stage-devsecops-pipeline) • [Threat Model](07_PRIMARY_PROJECT/THREAT_MODEL.md) • [Cloud Infrastructure](#-cloud-infrastructure--zero-trust-iam) • [Repository Map](#-repository-map)
 
 </div>
 
@@ -19,10 +19,11 @@
 
 ## 🎯 Executive Overview
 
-**CLOS (Cybersecurity Learning Operating System)** is a dual-purpose repository designed for **Technical CISOs, Security Architects, and DevSecOps Engineers**:
+**CLOS (CISO Learning Operating System)** is an open, hands-on framework designed for **Technical CISOs, Security Architects, and DevSecOps Engineers**:
 
-1. **Production-Ready SSDLC Reference Architecture**: End-to-end implementation of a hardened, spec-driven API secured across all lifecycle phases: **Threat Modeling ➔ Spec Contract ➔ Pre-commit ➔ SAST/SCA ➔ Policy-as-Code (OPA) ➔ Keyless OIDC Cloud Deployment**.
-2. **Executive Cybersecurity Playbook**: Translates board-level risk frameworks (NIST SP 800-218, OWASP SAMM, OSCAL) into deterministic automated pipeline gates.
+1. **Evidence-Backed SSDLC Reference Architecture**: End-to-end implementation of a hardened, spec-driven API secured across all lifecycle phases: **Threat Modeling ➔ Spec Contract ➔ Pre-commit ➔ SAST/SCA ➔ Policy-as-Code (OPA) ➔ Keyless OIDC Cloud Deployment**.
+2. **Deterministic Evidence Chain**: Translates board-level risk frameworks (NIST SSDF, OWASP SAMM, OSCAL) into automated, verifiable tests and machine-readable evidence.
+
 
 ---
 
