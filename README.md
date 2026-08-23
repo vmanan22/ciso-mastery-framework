@@ -124,7 +124,6 @@ GCP Project (ssdlc-platform-dev)
 ├── 03_WEEKLY_CHALLENGES/       # Weekly security architectural scenarios & challenges
 ├── 04_HALL_OF_PAIN/           # Engineering retrospective, mistakes & lessons learned
 ├── 05_LEARNING_LOG/            # Daily session journal & concept definitions
-├── 06_INTERVIEW_PREP/          # CISO / Director question banks and strategy guides
 └── 07_PRIMARY_PROJECT/         # AI-Powered Secure SDLC Platform
     ├── containers/app/         # Hardened FastAPI microservice & Dockerfile.hardened
     ├── docs/                   # OpenAPI 3.1 Spec & NIST OSCAL Component Definitions
