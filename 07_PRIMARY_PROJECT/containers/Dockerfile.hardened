@@ -4,7 +4,7 @@
 # ==============================================================================
 
 # ------------------------------------------------------------------------------
-# Stage 1: Build & Dependency Isolation Environment
+# Stage 1: Build & Pure Dependency Isolation
 # ------------------------------------------------------------------------------
 FROM python:3.11-slim-bookworm AS builder
 
@@ -19,14 +19,10 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends gcc python3-dev && \
     rm -rf /var/lib/apt/lists/*
 
-# Create virtual environment to isolate dependencies cleanly
-RUN python -m venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
-
 COPY app/requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip wheel setuptools && \
-    pip install --no-cache-dir -r requirements.txt && \
-    pip uninstall -y pip wheel setuptools 2>/dev/null || true
+# Install pure runtime dependencies without build tool metadata (no wheel/setuptools in production)
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir --target=/opt/packages -r requirements.txt
 
 COPY app/ .
 
@@ -46,12 +42,12 @@ RUN apt-get update && \
 RUN groupadd -g 65532 nonroot && \
     useradd -u 65532 -g 65532 -m -s /sbin/nologin nonroot
 
-# Copy virtual environment and app from builder
-COPY --from=builder --chown=65532:65532 /opt/venv /opt/venv
+# Copy pure runtime dependencies and application
+COPY --from=builder --chown=65532:65532 /opt/packages /opt/packages
 COPY --from=builder --chown=65532:65532 /app /app
 
-ENV PATH="/opt/venv/bin:$PATH" \
-    PYTHONPATH="/opt/venv/lib/python3.11/site-packages"
+ENV PATH="/opt/packages/bin:$PATH" \
+    PYTHONPATH="/opt/packages"
 
 # Enforce Non-Root Execution (UID 65532: nonroot)
 USER nonroot:nonroot
@@ -60,6 +56,6 @@ EXPOSE 8080
 
 # Health check using python urllib
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-  CMD ["/opt/venv/bin/python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/healthz')"]
+  CMD ["python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/healthz')"]
 
-ENTRYPOINT ["/opt/venv/bin/uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+ENTRYPOINT ["python3", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
