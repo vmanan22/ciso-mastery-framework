@@ -8,7 +8,6 @@
 # ------------------------------------------------------------------------------
 FROM python:3.11-slim-bookworm AS builder
 
-# Prevent python from writing pyc files and buffering stdout
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
@@ -20,7 +19,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 COPY app/requirements.txt .
-# Install pure runtime dependencies without build tool metadata (no wheel/setuptools in production)
+# Install pure runtime dependencies into /opt/packages
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir --target=/opt/packages -r requirements.txt
 
@@ -33,10 +32,15 @@ FROM python:3.11-slim-bookworm AS runner
 
 WORKDIR /app
 
-# Apply latest Debian security updates to eliminate base OS CVEs
+# Apply latest Debian security updates and remove base image build packaging tools
 RUN apt-get update && \
     apt-get upgrade -y && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* && \
+    rm -rf /usr/local/lib/python3.11/site-packages/pip* \
+           /usr/local/lib/python3.11/site-packages/setuptools* \
+           /usr/local/lib/python3.11/site-packages/wheel* \
+           /usr/local/lib/python3.11/site-packages/jaraco* \
+           /usr/local/lib/python3.11/site-packages/_distutils_hack*
 
 # Create non-root unprivileged user (UID 65532)
 RUN groupadd -g 65532 nonroot && \
