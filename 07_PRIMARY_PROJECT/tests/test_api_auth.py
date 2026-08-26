@@ -1,19 +1,26 @@
 """
 Automated Integration & Security Tests — FastAPI Microservice Authentication
-Validates Bearer JWT enforcement, negative failure paths, and OWASP security headers.
+Validates Bearer JWT enforcement, standard RFC 7519 claims (sub, exp, iss, aud), negative failure paths, and OWASP security headers.
 """
 
+import os
 import time
 import unittest
 
+# Set test environment credentials before importing app modules
+os.environ["JWT_SECRET"] = "test-e2e-jwt-secret-key-12345"
+os.environ["JWT_ISSUER"] = "clos-auth-service"
+os.environ["JWT_AUDIENCE"] = "clos-api"
+
 from fastapi.testclient import TestClient
-from containers.app.main import app, JWT_SECRET
+from containers.app.main import app, JWT_ISSUER, JWT_AUDIENCE
 from containers.app.jwt_validator import create_token
 
 
 class TestApiAuthentication(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        cls.secret = os.environ["JWT_SECRET"]
         cls.client = TestClient(app)
 
     def test_healthz_unauthenticated(self):
@@ -38,22 +45,68 @@ class TestApiAuthentication(unittest.TestCase):
         """Verifies that an expired JWT token is rejected."""
         expired_payload = {
             "sub": "expired-user",
-            "exp": time.time() - 3600
+            "exp": time.time() - 3600,
+            "iss": JWT_ISSUER,
+            "aud": JWT_AUDIENCE,
         }
-        token = create_token(expired_payload, JWT_SECRET)
+        token = create_token(expired_payload, self.secret)
         headers = {"Authorization": f"Bearer {token}"}
         resp = self.client.get("/api/v1/data", headers=headers)
         self.assertEqual(resp.status_code, 401)
         self.assertIn("expired", resp.json()["detail"].lower())
 
+    def test_protected_endpoint_missing_sub_returns_401(self):
+        """Verifies that a JWT without 'sub' claim is rejected."""
+        payload = {
+            "role": "security-engineer",
+            "exp": time.time() + 3600,
+            "iss": JWT_ISSUER,
+            "aud": JWT_AUDIENCE,
+        }
+        token = create_token(payload, self.secret)
+        headers = {"Authorization": f"Bearer {token}"}
+        resp = self.client.get("/api/v1/data", headers=headers)
+        self.assertEqual(resp.status_code, 401)
+        self.assertIn("sub", resp.json()["detail"].lower())
+
+    def test_protected_endpoint_mismatched_issuer_returns_401(self):
+        """Verifies that a JWT with an unexpected issuer is rejected."""
+        payload = {
+            "sub": "audited-engineer-01",
+            "exp": time.time() + 3600,
+            "iss": "untrusted-issuer",
+            "aud": JWT_AUDIENCE,
+        }
+        token = create_token(payload, self.secret)
+        headers = {"Authorization": f"Bearer {token}"}
+        resp = self.client.get("/api/v1/data", headers=headers)
+        self.assertEqual(resp.status_code, 401)
+        self.assertIn("iss", resp.json()["detail"].lower())
+
+    def test_protected_endpoint_mismatched_audience_returns_401(self):
+        """Verifies that a JWT intended for another audience is rejected."""
+        payload = {
+            "sub": "audited-engineer-01",
+            "exp": time.time() + 3600,
+            "iss": JWT_ISSUER,
+            "aud": "wrong-service-audience",
+        }
+        token = create_token(payload, self.secret)
+        headers = {"Authorization": f"Bearer {token}"}
+        resp = self.client.get("/api/v1/data", headers=headers)
+        self.assertEqual(resp.status_code, 401)
+        self.assertIn("aud", resp.json()["detail"].lower())
+
     def test_protected_endpoint_valid_token_returns_200(self):
-        """Verifies that a legitimately signed JWT returns 200 with verified claims."""
+        """Verifies that a legitimately signed JWT with all required claims returns 200."""
         valid_payload = {
             "sub": "audited-engineer-01",
             "role": "security-architect",
-            "exp": time.time() + 3600
+            "exp": time.time() + 3600,
+            "iss": JWT_ISSUER,
+            "aud": JWT_AUDIENCE,
         }
-        token = create_token(valid_payload, JWT_SECRET)
+        token = create_token(valid_payload, self.secret)
         headers = {"Authorization": f"Bearer {token}"}
         resp = self.client.get("/api/v1/data", headers=headers)
         self.assertEqual(resp.status_code, 200)

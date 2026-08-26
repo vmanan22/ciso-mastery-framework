@@ -1,0 +1,26 @@
+# ==============================================================================
+# Aegis Agent Tool Sandbox — Hardened Minimal Runtime Base
+# ==============================================================================
+# Security Controls:
+# - Non-root user (UID 10001)
+# - Read-only root filesystem
+# - Linux capabilities dropped (CAP_DROP_ALL)
+# ==============================================================================
+FROM python:3.12-slim-bookworm
+
+# Create unprivileged runtime user
+RUN groupadd -g 10001 aegis && \
+    useradd -u 10001 -g aegis -m -s /bin/bash aegis_agent
+
+WORKDIR /home/aegis_agent/sandbox
+
+# Install basic tool dependencies in isolated layer
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        curl \
+        ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+USER 10001:10001
+
+CMD ["/bin/bash"]

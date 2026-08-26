@@ -357,7 +357,7 @@ jobs:
         with:
           terraform_version: "1.9.0"
 
-      - name: "Terraform Init & Plan (Fail-Closed)"
+      - name: "Terraform Init & Plan (Fail-Closed Immutable Artifact)"
         env:
           TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
           TF_VAR_pipeline_service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
@@ -366,8 +366,20 @@ jobs:
           terraform init
           terraform plan \
             -no-color \
+            -out=tfplan.binary \
             -var="project_id=${{ secrets.GCP_PROJECT_ID }}" \
             -var="pipeline_service_account=${{ secrets.GCP_SERVICE_ACCOUNT }}"
+          sha256sum tfplan.binary > tfplan.sha256
+          echo "✅ Immutable Terraform plan & SHA-256 digest generated."
+
+      - name: "Upload Terraform Plan Artifact"
+        uses: actions/upload-artifact@v4
+        with:
+          name: "gcp-tfplan-${{ github.sha }}"
+          path: |
+            07_PRIMARY_PROJECT/iac/environments/gcp-dev/tfplan.binary
+            07_PRIMARY_PROJECT/iac/environments/gcp-dev/tfplan.sha256
+          retention-days: 7
 
   # ============================================================================
   # STAGE 6: GCP TERRAFORM APPLY (Deploy to Cloud)
@@ -396,15 +408,20 @@ jobs:
         with:
           terraform_version: "1.9.0"
 
-      - name: "Terraform Apply — Deploy Verified Infrastructure"
+      - name: "Download Terraform Plan Artifact"
+        uses: actions/download-artifact@v4
+        with:
+          name: "gcp-tfplan-${{ github.sha }}"
+          path: 07_PRIMARY_PROJECT/iac/environments/gcp-dev
+
+      - name: "Verify Plan Integrity & Apply Immutable Plan"
         env:
           TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
           TF_VAR_pipeline_service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
         run: |
           cd 07_PRIMARY_PROJECT/iac/environments/gcp-dev
+          echo "=== Verifying Plan Cryptographic Digest ==="
+          sha256sum -c tfplan.sha256
           terraform init
-          terraform apply \
-            -auto-approve \
-            -var="project_id=${{ secrets.GCP_PROJECT_ID }}" \
-            -var="pipeline_service_account=${{ secrets.GCP_SERVICE_ACCOUNT }}"
+          terraform apply tfplan.binary
           terraform output deployment_summary

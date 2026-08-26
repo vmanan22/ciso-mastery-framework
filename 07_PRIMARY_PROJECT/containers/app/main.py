@@ -18,8 +18,10 @@ try:
 except ImportError:
     from jwt_validator import verify_token
 
-# Configuration
-JWT_SECRET = os.environ.get("JWT_SECRET", "clos-hardened-dev-secret-key-change-in-prod")
+# Authentication Configuration (Strict Environment Requirement)
+JWT_SECRET: Optional[str] = os.environ.get("JWT_SECRET")
+JWT_ISSUER: str = os.environ.get("JWT_ISSUER", "clos-auth-service")
+JWT_AUDIENCE: str = os.environ.get("JWT_AUDIENCE", "clos-api")
 
 app = FastAPI(
     title="Secure Microservice API",
@@ -53,9 +55,16 @@ async def add_security_headers(request: Request, call_next):
 
 def verify_jwt_token(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)) -> dict:
     """
-    Validates the Bearer JWT token against signature and expiration.
-    Returns decoded token claims on success; raises 401 Unauthorized otherwise.
+    Validates the Bearer JWT token against signature, expiration, issuer, and audience.
+    Returns decoded token claims on success; raises 401 Unauthorized or 500 on unconfigured secret.
     """
+    secret = os.environ.get("JWT_SECRET") or JWT_SECRET
+    if not secret:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Server authentication configuration error: JWT_SECRET environment variable is not set",
+        )
+
     if credentials is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -64,7 +73,13 @@ def verify_jwt_token(credentials: Optional[HTTPAuthorizationCredentials] = Depen
         )
     
     token = credentials.credentials
-    is_valid, claims, error_msg = verify_token(token, JWT_SECRET)
+    is_valid, claims, error_msg = verify_token(
+        token=token,
+        secret=secret,
+        expected_issuer=JWT_ISSUER,
+        expected_audience=JWT_AUDIENCE,
+        require_standard_claims=True
+    )
     
     if not is_valid:
         raise HTTPException(

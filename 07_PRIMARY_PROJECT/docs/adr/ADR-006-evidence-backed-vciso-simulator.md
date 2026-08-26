@@ -11,11 +11,13 @@ To bridge the transition from technical engineering to fractional/advisory execu
 ## Decision
 Design and schedule an **Evidence-Backed vCISO Engagement Simulator** as a post-v0.3 cross-track capstone project.
 
-1. **Cross-Track Positioning**: The simulator consumes outputs primarily across 4 existing CLOS tracks:
-   - **Track 2 (Threat Modeling & Risk Quantification)**: STRIDE/ATLAS threats, FAIR/CVSS quantification.
-   - **Track 6 (Security Governance & Control Assurance)**: NIST SP 800-53, SOC 2, OSCAL control definitions.
-   - **Track 7 (Cloud & AI Security Architecture)**: IaC OPA policies, CMEK, Zero-Trust AI Gateway telemetry.
-   - **Track 8 (Executive Leadership & Board Communication)**: Decision memos, QBR decks, budget trade-offs.
+1. **Cross-Track Positioning**: The simulator acts as a cross-track capstone primarily synthesizing leadership and assurance across 4 canonical tracks:
+   - **Track 2 (Security Architecture)**: Architectural threat modeling, trust boundary decomposition, and specification-first controls.
+   - **Track 6 (Assurance, Validation, Red Teaming & Pentesting)**: Automated control validation, adversarial test verification, and audit attestation.
+   - **Track 7 (Security Operations & Resilience)**: Audit logging, incident telemetry, and operational resilience metrics.
+   - **Track 8 (CISO Operations, Enterprise Risk, Budgeting & Board Communication)**: Risk registers, ROSI budget modeling, executive decision memos, and board reporting.
+
+   *Technical Evidence Providers*: Consumes machine-readable evidence produced by **Track 3 (DevSecOps & Secure Software Supply Chain)**, **Track 4 (Cloud Security & Infrastructure as Code)**, and **Track 5 (AI Security & Autonomous Systems)**.
 
 2. **Synthetic Profiles & Data Privacy**:
    - The simulator executes entirely against synthetic fictional organizations (e.g., *Acme FinTech Corp*, *CloudScale Health*).

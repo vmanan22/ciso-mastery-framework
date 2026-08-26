@@ -13,7 +13,7 @@
         "uuid": "d3b07384-d113-46bc-a829-123456789abc",
         "type": "software",
         "title": "CLOS SSDLC Pipeline & Policy Control Plane",
-        "description": "Automated DevSecOps pipeline with SAST, SCA, Trivy, OPA Rego policy controls, and Distroless packaging.",
+        "description": "Automated DevSecOps pipeline with SAST, SCA, Trivy, OPA Rego policy controls, and hardened minimal non-root container packaging.",
         "purpose": "Enforce automated security quality gates and shift-left compliance prior to production cloud deployment.",
         "control-implementations": [
           {
@@ -33,7 +33,7 @@
               },
               {
                 "control-id": "ac-6",
-                "description": "Least Privilege (OIDC short-lived credentials & non-root distroless containers)",
+                "description": "Least Privilege (OIDC short-lived credentials & hardened minimal non-root containers)",
                 "implementation-status": { "state": "implemented" }
               },
               {
