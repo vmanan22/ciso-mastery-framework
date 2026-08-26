@@ -12,8 +12,11 @@ os.environ["JWT_SECRET"] = "test-e2e-jwt-secret-key-12345"
 os.environ["JWT_ISSUER"] = "clos-auth-service"
 os.environ["JWT_AUDIENCE"] = "clos-api"
 
+JWT_ISSUER = os.environ["JWT_ISSUER"]
+JWT_AUDIENCE = os.environ["JWT_AUDIENCE"]
+
 from fastapi.testclient import TestClient
-from containers.app.main import app, JWT_ISSUER, JWT_AUDIENCE
+from containers.app.main import app, validate_auth_config
 from containers.app.jwt_validator import create_token
 
 
