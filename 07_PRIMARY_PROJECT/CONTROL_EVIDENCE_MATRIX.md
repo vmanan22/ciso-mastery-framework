@@ -27,19 +27,19 @@
 | **SC-05** | Pre-Commit & CI Secret Scanning with Full History Audit | [`.gitleaks.toml`](file://07_PRIMARY_PROJECT/.gitleaks.toml) | Gitleaks Stage 1 CI Job | `.github/workflows/devsecops.yml` | **verified** | 2026-08-23 |
 | **SC-06** | Static Application Security Testing (SAST) with Quality Gate | [`.semgrep.yml`](file://07_PRIMARY_PROJECT/.semgrep.yml) + Bandit | SAST Stage 2 Quality Gate Script | `bandit-results.json`, `semgrep.sarif` | **verified** | 2026-08-23 |
 | **SC-07** | Infrastructure-as-Code Policy-as-Code Enforcement (OPA / Rego) | [`policies/iac_policies/`](file://07_PRIMARY_PROJECT/policies/iac_policies/) | Conftest evaluation against Terraform Plan | `07_PRIMARY_PROJECT/policies/iac_policies/` | **verified** | 2026-08-23 |
-| **SC-08** | Container Hardening: Distroless Base & Non-Root User (UID 65532) | [`containers/Dockerfile.hardened`](file://07_PRIMARY_PROJECT/containers/Dockerfile.hardened) | Docker buildx + Trivy scan | `07_PRIMARY_PROJECT/containers/Dockerfile.hardened` | **implemented** | 2026-08-23 |
+| **SC-08** | Container Hardening: Minimal Non-Root Runtime (UID 65532) | [`containers/Dockerfile.hardened`](file://07_PRIMARY_PROJECT/containers/Dockerfile.hardened) | Docker buildx + Trivy scan | `07_PRIMARY_PROJECT/containers/Dockerfile.hardened` | **verified** | 2026-08-23 |
 | **SC-09** | Cryptographic Container Image Signing & Attestation (Cosign) | [`.github/workflows/devsecops.yml:278-284`](file://.github/workflows/devsecops.yml) | Sigstore Rekor transparency log | `.github/workflows/devsecops.yml` | **in progress** | 2026-08-23 |
 | **SC-10** | Dynamic Application Security Testing (DAST) on Active Endpoints | Scheduled for v0.3 milestone | OWASP ZAP automated scan | Roadmap milestone v0.3 | **planned** | — |
-| **SC-11** | Inbound Prompt Injection & Jailbreak Heuristic Guard | [`ai_security_gateway/gateway/filters/prompt_injection.py`](file://07_PRIMARY_PROJECT/ai_security_gateway/gateway/filters/prompt_injection.py) | [`ai_security_gateway/tests/test_prompt_injection.py`](file://07_PRIMARY_PROJECT/ai_security_gateway/tests/test_prompt_injection.py) | `07_PRIMARY_PROJECT/ai_security_gateway/tests/` | **verified** | 2026-08-23 |
-| **SC-12** | Outbound PII & Secret Redaction (Presidio + Regex) | [`ai_security_gateway/gateway/filters/pii_masker.py`](file://07_PRIMARY_PROJECT/ai_security_gateway/gateway/filters/pii_masker.py) | [`ai_security_gateway/tests/test_pii_masking.py`](file://07_PRIMARY_PROJECT/ai_security_gateway/tests/test_pii_masking.py) | `07_PRIMARY_PROJECT/ai_security_gateway/tests/` | **verified** | 2026-08-23 |
-| **SC-13** | Autonomous Agent MCP Tool Interception & OPA Parameter Gate | [`ai_security_gateway/gateway/mcp_broker/`](file://07_PRIMARY_PROJECT/ai_security_gateway/gateway/mcp_broker/) | [`ai_security_gateway/tests/test_mcp_broker.py`](file://07_PRIMARY_PROJECT/ai_security_gateway/tests/test_mcp_broker.py) | `07_PRIMARY_PROJECT/ai_security_gateway/tests/` | **verified** | 2026-08-23 |
+| **SC-11** | Inbound Prompt Injection & Jailbreak Heuristic Guard | Scheduled for v0.2 milestone | Adversarial test suite | Roadmap milestone v0.2 | **planned** | — |
+| **SC-12** | Outbound PII & Secret Redaction Engine | Scheduled for v0.2 milestone | Automated DLP test suite | Roadmap milestone v0.2 | **planned** | — |
+| **SC-13** | Autonomous Agent MCP Tool Interception & Policy Gate | Scheduled for v0.2 milestone | MCP broker test suite | Roadmap milestone v0.2 | **planned** | — |
 
 ---
 
 ## 3. Coverage Summary
 
 * **Total Controls**: 13
-* **Verified (Automated Proof)**: 9 (69%)
-* **Implemented**: 1 (8%)
+* **Verified (Automated Proof)**: 8 (62%)
+* **Implemented**: 0 (0%)
 * **In Progress**: 1 (8%)
-* **Planned**: 2 (15%)
+* **Planned**: 4 (31%)

@@ -13,7 +13,7 @@
 │                                                                             │
 │  [v0.1] Trustworthy Foundations & Flagship Secure Software Factory          │
 │         • Fail-closed DevSecOps CI/CD, Bearer JWT Auth, OPA Policy Gate    │
-│         • Status: In Progress (Target: Q3 2026)                             │
+│         • Status: Completed (Q3 2026)                                       │
 │                                                                             │
 │  [v0.2] AI Security Engineering & MCP Broker Lab                            │
 │         • Zero-Trust AI Security Gateway, Inbound/Outbound Guards           │
@@ -24,6 +24,11 @@
 │         • Dynamic Risk Register, Automated DAST Scanning (OWASP ZAP)        │
 │         • Machine-Readable OSCAL Generation & Executive Board Memos         │
 │         • Status: Planned (Target: Q1 2027)                                 │
+│                                                                             │
+│  [Post-v0.3 Capstone] Evidence-Backed vCISO Engagement Simulator             │
+│         • Cross-Track Capstone synthesizing Tracks 2, 6, 7, and 8           │
+│         • Board Memos, Risk Registers & Handover from real CI/CD evidence   │
+│         • Status: Planned (Target: Q2 2027)                                 │
 │                                                                             │
 │  [v1.0] Community Operating System & Multi-Track Ecosystem                  │
 │         • 8 Full Capability Tracks, Multi-Maintainer Governance             │
@@ -40,13 +45,13 @@
 ### 🎯 Version 0.1 — Trustworthy Foundations & Flagship Secure Software Factory
 * **Goal**: Deliver an uncompromised, evidence-backed DevSecOps reference architecture.
 * **Key Deliverables**:
-  - [x] Fail-Closed 6-Stage CI/CD Pipeline (Gitleaks, Bandit, Semgrep, Checkov, OPA, Distroless, Trivy, Syft, Cosign).
+  - [x] Fail-Closed 6-Stage CI/CD Pipeline (Gitleaks, Bandit, Semgrep, Checkov, OPA, Hardened Container, Trivy, Syft, Cosign).
   - [x] Zero-Dependency HMAC-SHA256 Bearer JWT Auth in FastAPI Microservice.
   - [x] Single Canonical Architecture Specification with C4 Container Diagram & ADRs.
   - [x] Single Canonical Control & Evidence Matrix mapping all controls to automated test evidence.
   - [x] Standard Apache-2.0 open-source licensing.
-  - [ ] Generic learner template system and private learner directory structure (`.clos-local/`).
-  - [ ] Open-source contributor infrastructure (`CONTRIBUTING.md`, `GOVERNANCE.md`, `SECURITY.md`).
+  - [x] Generic learner template system and private learner directory structure (`.clos-local/`).
+  - [x] Open-source contributor infrastructure (`CONTRIBUTING.md`, `GOVERNANCE.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`).
 
 ---
 
@@ -68,6 +73,24 @@
   - [ ] Automated DAST integration in pre-production staging (OWASP ZAP / Nuclei).
   - [ ] Machine-readable OSCAL Assessment Results (`oscal-ar`) generation from CI artifacts.
   - [ ] Executive Board Decision Memos and Budget Allocation trade-off templates.
+
+---
+
+### 🎓 Post-v0.3 Capstone — Evidence-Backed vCISO Engagement Simulator
+* **Goal**: Provide a cross-track capstone experience synthesizing technical control assurance into end-to-end executive advisory deliverables.
+* **Consumes**: Track 2 (Threat Modeling & Risk Quantification), Track 6 (Security Governance & Control Assurance), Track 7 (Cloud & AI Security Architecture), and Track 8 (Executive Leadership & Board Communication).
+* **Key Deliverables**:
+  - [ ] Engagement Scope & Charter Template for synthetic organization (e.g., *Acme FinTech*).
+  - [ ] Evidence-Confidence Assessment evaluating machine-readable scanner outputs.
+  - [ ] Dynamic Risk Register mapping CI/CD findings to quantifiable business impact (FAIR / CVSS).
+  - [ ] Control Remediation Roadmap with prioritized technical milestones.
+  - [ ] Budget & ROSI Scenario Modeling (trade-offs between remediation cost vs. breach loss expectancy).
+  - [ ] Executive Board Decision Memo & QBR Presentation Deck.
+  - [ ] Client Handover Package with audit-ready OSCAL compliance records.
+* **Non-Goals & Constraints**:
+  - Does *not* introduce a 9th track (remains a capstone synthesizing the 8 core CLOS tracks).
+  - Uses 100% synthetic organizational profiles (no proprietary or individual-specific data).
+  - Implementation commences only after v0.1, v0.2, and v0.3 provide live evidence feeds.
 
 ---
 

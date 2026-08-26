@@ -32,6 +32,8 @@ jobs:
     name: "🛡️ Pipeline Integrity — Fail-Closed Verifier"
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    outputs:
+      has_gcp_creds: ${{ steps.check-gcp-creds.outputs.has_gcp_creds }}
     steps:
       - name: "Checkout Source Code"
         uses: actions/checkout@v4
@@ -44,6 +46,17 @@ jobs:
       - name: "Verify No Failure-Masking Patterns in Workflows"
         run: |
           python3 scripts/verify_fail_closed.py
+
+      - name: "Detect GCP Cloud Credentials Availability"
+        id: check-gcp-creds
+        run: |
+          if [ -n "${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}" ]; then
+            echo "has_gcp_creds=true" >> $GITHUB_OUTPUT
+            echo "✅ GCP OIDC configuration detected in repository secrets."
+          else
+            echo "has_gcp_creds=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ GCP Workload Identity Provider not configured in repository secrets. Cloud deployment stages will be visibly skipped."
+          fi
 
   # ============================================================================
   # STAGE 1: SECRET LEAK SCAN (Gitleaks)
@@ -65,10 +78,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # ============================================================================
-  # STAGE 2: SAST CODE SCAN (Semgrep + Bandit)
+  # STAGE 2: SAST CODE SCAN & UNIT TEST GATE (Semgrep + Bandit + Unit Tests)
   # ============================================================================
   stage-2-sast-scan:
-    name: "🔍 Stage 2 — SAST Code Scan (Semgrep + Bandit)"
+    name: "🔍 Stage 2 — SAST Code Scan & Unit Tests (Semgrep + Bandit)"
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: [stage-1-secret-scan]
@@ -84,10 +97,17 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: "Install SAST Toolchain"
+      - name: "Install Dependencies & Test Toolchain"
         run: |
           python3 -m pip install --upgrade pip
-          pip install semgrep bandit[toml]
+          pip install semgrep bandit[toml] pytest httpx
+          pip install -r 07_PRIMARY_PROJECT/containers/app/requirements.txt
+
+      - name: "Run Microservice Security & Authentication Unit Tests"
+        working-directory: 07_PRIMARY_PROJECT
+        run: |
+          echo "=== Running Microservice Authentication & Security Unit Tests ==="
+          python3 -m unittest discover -s tests -p "test_*.py" -v
 
       - name: "Bandit — Python Security Analysis"
         run: |
@@ -316,9 +336,8 @@ jobs:
     name: "🌐 Stage 5 — GCP Terraform Plan (OIDC Auth)"
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [stage-4-container-security]
-    outputs:
-      has_creds: ${{ steps.check-creds.outputs.has_creds }}
+    needs: [stage-4-container-security, pipeline-integrity-check]
+    if: needs.pipeline-integrity-check.outputs.has_gcp_creds == 'true'
     permissions:
       contents: read
       id-token: write
@@ -327,31 +346,18 @@ jobs:
       - name: "Checkout Source Code"
         uses: actions/checkout@v4
 
-      - name: "Check Cloud Credentials Availability"
-        id: check-creds
-        run: |
-          if [ -z "${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}" ]; then
-            echo "has_creds=false" >> $GITHUB_OUTPUT
-            echo "::notice::GCP Workload Identity Provider not configured in repository secrets. Cloud plan skipped."
-          else
-            echo "has_creds=true" >> $GITHUB_OUTPUT
-          fi
-
       - name: "Authenticate to GCP via Workload Identity Federation"
-        if: steps.check-creds.outputs.has_creds == 'true'
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
       - name: "Setup Terraform"
-        if: steps.check-creds.outputs.has_creds == 'true'
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.9.0"
 
       - name: "Terraform Init & Plan (Fail-Closed)"
-        if: steps.check-creds.outputs.has_creds == 'true'
         env:
           TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
           TF_VAR_pipeline_service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
@@ -370,8 +376,8 @@ jobs:
     name: "🚀 Stage 6 — GCP Terraform Apply (Deploy to Cloud)"
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: [stage-5-gcp-plan]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && needs.stage-5-gcp-plan.outputs.has_creds == 'true'
+    needs: [stage-5-gcp-plan, pipeline-integrity-check]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && needs.pipeline-integrity-check.outputs.has_gcp_creds == 'true'
     permissions:
       contents: read
       id-token: write

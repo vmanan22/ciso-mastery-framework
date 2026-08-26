@@ -6,20 +6,14 @@ Validates Bearer JWT enforcement, negative failure paths, and OWASP security hea
 import time
 import unittest
 
-try:
-    from fastapi.testclient import TestClient
-    from containers.app.main import app, JWT_SECRET
-    from containers.app.jwt_validator import create_token
-    FASTAPI_AVAILABLE = True
-except ImportError:
-    FASTAPI_AVAILABLE = False
+from fastapi.testclient import TestClient
+from containers.app.main import app, JWT_SECRET
+from containers.app.jwt_validator import create_token
 
 
 class TestApiAuthentication(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        if not FASTAPI_AVAILABLE:
-            raise unittest.SkipTest("FastAPI / TestClient dependencies not installed in current environment")
         cls.client = TestClient(app)
 
     def test_healthz_unauthenticated(self):

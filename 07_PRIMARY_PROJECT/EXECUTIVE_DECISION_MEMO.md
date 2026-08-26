@@ -24,7 +24,7 @@ The following automated telemetry was captured across 6 fail-closed pipeline sta
 | **Credential Security** | Gitleaks CI Gate | Full Git Commit History Audit | ✅ 0 Leaks | 🟢 Negligible |
 | **Code Vulnerabilities** | Semgrep + Bandit AST | Automated SAST Quality Gate | ✅ 0 High/Crit | 🟢 Low |
 | **Infrastructure Security**| Checkov + OPA Rego | Conftest Pre-Deploy Evaluation | ✅ 0 Violations | 🟢 Low |
-| **Container Hardening** | Google Distroless | Trivy CVE Scan (Exit-Code 1) | ✅ 0 High CVEs | 🟢 Low |
+| **Container Hardening** | Hardened Minimal Non-Root Base | Trivy CVE Scan (Exit-Code 1) | ✅ 0 High CVEs | 🟢 Low |
 | **API Authentication** | RFC 7519 Bearer JWT | Automated Unit & Integration Tests | ✅ 100% Pass | 🟢 Low |
 | **Cloud Encryption** | Cloud KMS CMEK (AES-256) | Automated 90-Day Rotation Policy | ✅ Enforced | 🟢 Negligible |
 
