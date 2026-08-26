@@ -7,6 +7,7 @@ Enforces:
 - Unauthenticated Healthz Probe
 """
 
+import os
 from contextlib import asynccontextmanager
 from typing import Optional, Dict
 from fastapi import FastAPI, Depends, HTTPException, status, Request
