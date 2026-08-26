@@ -29,14 +29,14 @@ The following automated telemetry was captured across the fail-closed pipeline s
 | **Code Vulnerabilities** | Semgrep + Bandit AST | Automated SAST Quality Gate | ✅ 0 High/Crit Findings | 🟢 Low (Automated quality gate) |
 | **Infrastructure Policy** | Checkov + OPA Rego | Conftest Pre-Deploy Evaluation | ✅ 0 Policy Violations | 🟢 Low (IaC guardrails enforced) |
 | **Container Hardening** | Hardened Minimal Runtime | Trivy CVE Scan (Exit-Code 1) | ✅ 0 High/Crit CVEs | 🟢 Low (Base packaging purged) |
-| **API Authentication** | RFC 7519 Bearer JWT | Automated Unit & Integration Tests | ✅ 100% Pass (12/12 Tests) | 🟢 Low (Standard claims enforced) |
+| **API Authentication** | RFC 7519 Bearer JWT | Automated Unit & Startup Tests | ⏳ 24 Tests Implemented (Pending PR CI Run) | 🟢 Low (Standard claims & fail-closed startup) |
 | **Cloud Provisioning** | Terraform + Cloud KMS CMEK | Keyless OIDC Plan & Apply | ⚠️ Visibly Skipped (No OIDC Secrets) | 🟡 Moderate (Pending cloud credentials) |
 
 ---
 
 ## 3. Illustrative Risk & Business Impact Analysis (ROSI Framework)
 
-* **Attack Surface Reduction**: Mandatory Bearer JWT validation with RFC 7519 standard claims (`sub`, `exp`, `iss`, `aud`) and OWASP security headers prevents unauthenticated microservice ingress.
+* **Attack Surface Reduction**: Mandatory Bearer JWT validation with RFC 7519 standard claims (`sub`, `exp`, `iss`, `aud`), fail-closed startup validation, and OWASP security headers prevents unauthenticated microservice ingress.
 * **Supply Chain Provenance**: Automated Software Bill of Materials (SBOM) generation via Syft and keyless container signing via Sigstore Cosign provide tamper-evident build verification.
 * **Infrastructure Guardrails**: Declarative OPA Rego policies evaluate Terraform configuration plans offline, preventing misconfigured unencrypted storage buckets from entering production pipelines.
 * **Operational Efficiency**: Keyless Workload Identity Federation eliminates the operational risk and manual rotation burden associated with static, long-lived cloud service account keys.
@@ -46,5 +46,5 @@ The following automated telemetry was captured across the fail-closed pipeline s
 ## 4. Recommendation & Next Steps
 
 1. **Maintain v0.1-RC Status**: Keep Milestone v0.1 in *Release Candidate — Evidence Reconciliation In Progress* until enterprise cloud OIDC credentials are provisioned for end-to-end cloud deployment validation.
-2. **Proceed to Milestone v0.2**: Initiate the **Zero-Trust AI Security Gateway & MCP Tool Broker Lab** to extend policy-as-code governance to LLM prompts and autonomous agent tool execution.
+2. **Sequenced Progression to v0.2**: Begin Milestone v0.2 (Zero-Trust AI Security Gateway & MCP Tool Broker Lab) strictly after v0.1 acceptance criteria are satisfied, the reconciliation PR is merged, and automated CI evidence is captured.
 3. **Capstone Integration**: Maintain alignment with the planned post-v0.3 **Evidence-Backed vCISO Engagement Simulator** (ADR-006) for synthesizing technical evidence into executive advisory deliverables.

@@ -122,6 +122,42 @@ class TestApiAuthentication(unittest.TestCase):
         self.assertIn("default-src 'self'", resp.headers.get("Content-Security-Policy", ""))
         self.assertIn("max-age=31536000", resp.headers.get("Strict-Transport-Security", ""))
 
+    def test_startup_fails_when_jwt_secret_missing(self):
+        """Verifies that missing JWT_SECRET aborts startup with a critical configuration error."""
+        from containers.app.main import validate_auth_config
+        original = os.environ.pop("JWT_SECRET", None)
+        try:
+            with self.assertRaises(RuntimeError) as ctx:
+                validate_auth_config()
+            self.assertIn("JWT_SECRET", str(ctx.exception))
+        finally:
+            if original:
+                os.environ["JWT_SECRET"] = original
+
+    def test_startup_fails_when_jwt_issuer_missing(self):
+        """Verifies that missing JWT_ISSUER aborts startup with a critical configuration error."""
+        from containers.app.main import validate_auth_config
+        original = os.environ.pop("JWT_ISSUER", None)
+        try:
+            with self.assertRaises(RuntimeError) as ctx:
+                validate_auth_config()
+            self.assertIn("JWT_ISSUER", str(ctx.exception))
+        finally:
+            if original:
+                os.environ["JWT_ISSUER"] = original
+
+    def test_startup_fails_when_jwt_audience_missing(self):
+        """Verifies that missing JWT_AUDIENCE aborts startup with a critical configuration error."""
+        from containers.app.main import validate_auth_config
+        original = os.environ.pop("JWT_AUDIENCE", None)
+        try:
+            with self.assertRaises(RuntimeError) as ctx:
+                validate_auth_config()
+            self.assertIn("JWT_AUDIENCE", str(ctx.exception))
+        finally:
+            if original:
+                os.environ["JWT_AUDIENCE"] = original
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -20,15 +20,15 @@
 
 | Control ID | Requirement | Implementation | Test | Evidence Path | Status | Last Verified |
 | :---: | :--- | :--- | :--- | :--- | :---: | :---: |
-| **SC-01** | Short-lived OIDC tokens for CI/CD Cloud Access (No Long-Lived Keys) | [`.github/workflows/devsecops.yml`](../.github/workflows/devsecops.yml) | Google WIF Keyless Workflow Gate | [CI Run #32969880301](https://github.com/vmanan22/ciso-mastery-framework/actions/runs/32969880301) (Gated Skip on Absent Secrets) | **verified** | 2026-08-26 |
-| **SC-02** | Bearer JWT Authentication with RFC 7519 Standard Claims (sub, exp, iss, aud) | [`containers/app/main.py`](containers/app/main.py) | [`tests/test_jwt_validator.py`](tests/test_jwt_validator.py), [`tests/test_api_auth.py`](tests/test_api_auth.py) | [CI Run #32969880301](https://github.com/vmanan22/ciso-mastery-framework/actions/runs/32969880301) (Stage 2 Unit Tests) | **verified** | 2026-08-26 |
-| **SC-03** | Cloud KMS CMEK (AES-256) Encryption at Rest with 90-Day Rotation | [`iac/environments/gcp-dev/main.tf`](iac/environments/gcp-dev/main.tf) | Checkov CKV_GCP_82 & OPA Rego Gate | [CI Run #32969880301](https://github.com/vmanan22/ciso-mastery-framework/actions/runs/32969880301) (IaC Scan; Live Deploy Skipped) | **verified** | 2026-08-26 |
-| **SC-04** | Hardened Security Headers (CSP, HSTS, X-Frame-Options, X-Content-Type) | [`containers/app/main.py`](containers/app/main.py) | [`tests/test_api_auth.py`](tests/test_api_auth.py) | [CI Run #32969880301](https://github.com/vmanan22/ciso-mastery-framework/actions/runs/32969880301) (Stage 2 Unit Tests) | **verified** | 2026-08-26 |
+| **SC-01** | Short-lived OIDC tokens for CI/CD Cloud Access (No Long-Lived Keys) | [`.github/workflows/devsecops.yml`](../.github/workflows/devsecops.yml) | Google WIF Keyless Workflow Gate | Gated in CI (Pending live cloud credentials) | **implemented** | — |
+| **SC-02** | Bearer JWT Authentication with RFC 7519 Standard Claims (sub, exp, iss, aud) | [`containers/app/main.py`](containers/app/main.py) | [`tests/test_jwt_validator.py`](tests/test_jwt_validator.py), [`tests/test_api_auth.py`](tests/test_api_auth.py) | 24 automated unit & startup tests (Pending PR CI run) | **implemented** | — |
+| **SC-03** | Cloud KMS CMEK (AES-256) Encryption at Rest with 90-Day Rotation | [`iac/environments/gcp-dev/main.tf`](iac/environments/gcp-dev/main.tf) | Checkov CKV_GCP_82 & OPA Rego Gate | IaC Policy Verified; Operational CMEK pending live cloud deploy | **implemented** | — |
+| **SC-04** | Hardened Security Headers (CSP, HSTS, X-Frame-Options, X-Content-Type) | [`containers/app/main.py`](containers/app/main.py) | [`tests/test_api_auth.py`](tests/test_api_auth.py) | Unit test header assertions (Pending PR CI run) | **implemented** | — |
 | **SC-05** | Pre-Commit & CI Secret Scanning with Full History Audit | [`.gitleaks.toml`](.gitleaks.toml) | Gitleaks Stage 1 CI Job | [CI Run #32969880301](https://github.com/vmanan22/ciso-mastery-framework/actions/runs/32969880301) (0 Leaks Detected) | **verified** | 2026-08-26 |
 | **SC-06** | Static Application Security Testing (SAST) with Quality Gate | [`.semgrep.yml`](.semgrep.yml) + Bandit | SAST Stage 2 Quality Gate Script | [CI Run #32969880301](https://github.com/vmanan22/ciso-mastery-framework/actions/runs/32969880301) (`bandit-results.json`, `semgrep.sarif`) | **verified** | 2026-08-26 |
 | **SC-07** | Infrastructure-as-Code Policy-as-Code Enforcement (OPA / Rego) | [`policies/iac_policies/`](policies/iac_policies/) | Conftest evaluation against Terraform Plan | [CI Run #32969880301](https://github.com/vmanan22/ciso-mastery-framework/actions/runs/32969880301) (Stage 3 Conftest Gate) | **verified** | 2026-08-26 |
 | **SC-08** | Container Hardening: Minimal Non-Root Runtime (UID 65532) | [`containers/Dockerfile.hardened`](containers/Dockerfile.hardened) | Docker buildx + Trivy scan | [CI Run #32969880301](https://github.com/vmanan22/ciso-mastery-framework/actions/runs/32969880301) (0 High/Crit CVEs) | **verified** | 2026-08-26 |
-| **SC-09** | Cryptographic Container Image Signing & Attestation (Cosign) | [`.github/workflows/devsecops.yml`](../.github/workflows/devsecops.yml) | Sigstore Rekor transparency log | [CI Run #32969880301](https://github.com/vmanan22/ciso-mastery-framework/actions/runs/32969880301) (Signed on main push) | **in progress** | 2026-08-26 |
+| **SC-09** | Cryptographic Container Image Signing & Attestation (Cosign) | [`.github/workflows/devsecops.yml`](../.github/workflows/devsecops.yml) | Sigstore Rekor transparency log | Configured in CI workflow (Runs on main push) | **in progress** | — |
 | **SC-10** | Dynamic Application Security Testing (DAST) on Active Endpoints | Scheduled for v0.3 milestone | OWASP ZAP automated scan | Roadmap milestone v0.3 | **planned** | — |
 | **SC-11** | Inbound Prompt Injection & Jailbreak Heuristic Guard | Scheduled for v0.2 milestone | Adversarial test suite | Roadmap milestone v0.2 | **planned** | — |
 | **SC-12** | Outbound PII & Secret Redaction Engine | Scheduled for v0.2 milestone | Automated DLP test suite | Roadmap milestone v0.2 | **planned** | — |
@@ -39,8 +39,7 @@
 ## 3. Coverage Summary
 
 * **Total Controls**: 13
-* **Verified (Automated Proof)**: 8 (62%)
-* **Implemented**: 0 (0%)
+* **Verified (Automated CI Proof)**: 4 (31%)
+* **Implemented / Locally Tested**: 4 (31%)
 * **In Progress**: 1 (8%)
 * **Planned**: 4 (31%)
-* **Reference CI Run**: [Run #32969880301](https://github.com/vmanan22/ciso-mastery-framework/actions/runs/32969880301) (Passed Stages 1–4, Visibly Skipped Stages 5–6)

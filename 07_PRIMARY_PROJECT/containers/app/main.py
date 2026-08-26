@@ -7,8 +7,8 @@ Enforces:
 - Unauthenticated Healthz Probe
 """
 
-import os
-from typing import Optional
+from contextlib import asynccontextmanager
+from typing import Optional, Dict
 from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -18,15 +18,45 @@ try:
 except ImportError:
     from jwt_validator import verify_token
 
-# Authentication Configuration (Strict Environment Requirement)
-JWT_SECRET: Optional[str] = os.environ.get("JWT_SECRET")
-JWT_ISSUER: str = os.environ.get("JWT_ISSUER", "clos-auth-service")
-JWT_AUDIENCE: str = os.environ.get("JWT_AUDIENCE", "clos-api")
+
+def validate_auth_config() -> Dict[str, str]:
+    """
+    Validates that all mandatory authentication environment variables are configured.
+    Raises RuntimeError on startup if any required parameter is missing or empty.
+    """
+    secret = os.environ.get("JWT_SECRET")
+    issuer = os.environ.get("JWT_ISSUER")
+    audience = os.environ.get("JWT_AUDIENCE")
+
+    missing = []
+    if not secret or not secret.strip():
+        missing.append("JWT_SECRET")
+    if not issuer or not issuer.strip():
+        missing.append("JWT_ISSUER")
+    if not audience or not audience.strip():
+        missing.append("JWT_AUDIENCE")
+
+    if missing:
+        raise RuntimeError(
+            f"CRITICAL: Application startup aborted. Missing mandatory authentication environment variables: {', '.join(missing)}. "
+            "Set JWT_SECRET, JWT_ISSUER, and JWT_AUDIENCE in the deployment environment."
+        )
+
+    return {"secret": secret, "issuer": issuer, "audience": audience}
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan handler executing fail-closed startup validation checks."""
+    validate_auth_config()
+    yield
+
 
 app = FastAPI(
     title="Secure Microservice API",
     description="Production-grade secure service implementing OWASP security controls & Bearer JWT authentication",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # CORS Policy: Restrict Allowed Origins
@@ -56,13 +86,14 @@ async def add_security_headers(request: Request, call_next):
 def verify_jwt_token(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)) -> dict:
     """
     Validates the Bearer JWT token against signature, expiration, issuer, and audience.
-    Returns decoded token claims on success; raises 401 Unauthorized or 500 on unconfigured secret.
+    Returns decoded token claims on success; raises 401 Unauthorized or fails closed on configuration error.
     """
-    secret = os.environ.get("JWT_SECRET") or JWT_SECRET
-    if not secret:
+    try:
+        auth_config = validate_auth_config()
+    except RuntimeError as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Server authentication configuration error: JWT_SECRET environment variable is not set",
+            detail=str(e)
         )
 
     if credentials is None:
@@ -75,9 +106,9 @@ def verify_jwt_token(credentials: Optional[HTTPAuthorizationCredentials] = Depen
     token = credentials.credentials
     is_valid, claims, error_msg = verify_token(
         token=token,
-        secret=secret,
-        expected_issuer=JWT_ISSUER,
-        expected_audience=JWT_AUDIENCE,
+        secret=auth_config["secret"],
+        expected_issuer=auth_config["issuer"],
+        expected_audience=auth_config["audience"],
         require_standard_claims=True
     )
     
