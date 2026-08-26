@@ -15,7 +15,7 @@ This memorandum provides the security posture evaluation for the **CLOS Secure S
 
 By establishing an unbroken **Evidence Chain** (*Threat ➔ Architecture ➔ Policy-as-Code ➔ Automated Testing ➔ Cryptographic Proof*), the platform provides automated verification for pre-commit secret detection, AST code vulnerability analysis, container supply chain integrity, and Policy-as-Code guardrails. 
 
-*Current Staging Status*: Shift-left application and pipeline security gates are actively verified in CI ([Run #32969880301](https://github.com/vmanan22/ciso-mastery-framework/actions/runs/32969880301)). Live cloud deployment stages are gated and visibly skipped pending enterprise cloud credential provisioning.
+*Current Staging Status*: Shift-left application and pipeline security gates are actively verified in CI ([PR #15 Run #32972289149](https://github.com/vmanan22/ciso-mastery-framework/actions/runs/32972289149)). Live cloud deployment stages are gated and visibly skipped pending enterprise cloud credential provisioning.
 
 ---
 
@@ -29,7 +29,7 @@ The following automated telemetry was captured across the fail-closed pipeline s
 | **Code Vulnerabilities** | Semgrep + Bandit AST | Automated SAST Quality Gate | ✅ 0 High/Crit Findings | 🟢 Low (Automated quality gate) |
 | **Infrastructure Policy** | Checkov + OPA Rego | Conftest Pre-Deploy Evaluation | ✅ 0 Policy Violations | 🟢 Low (IaC guardrails enforced) |
 | **Container Hardening** | Hardened Minimal Runtime | Trivy CVE Scan (Exit-Code 1) | ✅ 0 High/Crit CVEs | 🟢 Low (Base packaging purged) |
-| **API Authentication** | RFC 7519 Bearer JWT | Automated Unit & Startup Tests | ⏳ 24 Tests Implemented (Pending PR CI Run) | 🟢 Low (Standard claims & fail-closed startup) |
+| **API Authentication** | RFC 7519 Bearer JWT | Automated Unit & Startup Tests | ✅ 100% Pass (24/24 Tests) | 🟢 Low (Standard claims & fail-closed startup) |
 | **Cloud Provisioning** | Terraform + Cloud KMS CMEK | Keyless OIDC Plan & Apply | ⚠️ Visibly Skipped (No OIDC Secrets) | 🟡 Moderate (Pending cloud credentials) |
 
 ---
