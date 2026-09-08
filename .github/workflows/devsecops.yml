@@ -109,26 +109,25 @@ jobs:
           echo "=== Running Microservice Authentication & Security Unit Tests ==="
           python3 -m unittest discover -s tests -p "test_*.py" -v
 
+      - name: "Test SAST Rules & Native Fail-Closed Gate"
+        run: |
+          semgrep --test --config 07_PRIMARY_PROJECT/.semgrep.yml tests/semgrep/routes.py
+          python3 -m unittest discover -s tests -p "test_*.py" -v
+
       - name: "Bandit — Python Security Analysis"
         run: |
           echo "=== Running Bandit Security Linter ==="
-          bandit -r 07_PRIMARY_PROJECT/containers/app/ -ll --format json -o bandit-results.json --exit-zero
+          bandit -r 07_PRIMARY_PROJECT/containers/app/ -lll --format json -o bandit-results.json
           cat bandit-results.json
 
       - name: "Semgrep — OWASP Top 10 & Custom Security Rules"
         run: |
           echo "=== Running Semgrep AST Analysis ==="
-          semgrep scan \
-            --config=auto \
-            --config=07_PRIMARY_PROJECT/.semgrep.yml \
-            --sarif \
-            --output=semgrep.sarif \
-            07_PRIMARY_PROJECT/containers/app/
+          bash scripts/run_semgrep.sh
 
       - name: "Upload Semgrep SARIF to GitHub Security"
         uses: github/codeql-action/upload-sarif@v3
         if: always()
-        continue-on-error: true
         with:
           sarif_file: semgrep.sarif
           category: semgrep
@@ -142,38 +141,6 @@ jobs:
             bandit-results.json
             semgrep.sarif
           retention-days: 30
-
-      - name: "Evaluate SAST Quality Gate (Fail-Closed)"
-        run: |
-          python3 - <<'EOF'
-          import json, sys, os
-
-          failed = False
-          if os.path.exists("bandit-results.json"):
-              with open("bandit-results.json") as f:
-                  data = json.load(f)
-              high_findings = [r for r in data.get("results", []) if r.get("issue_severity") == "HIGH"]
-              if high_findings:
-                  print(f"❌ Bandit detected {len(high_findings)} HIGH severity findings:")
-                  for h in high_findings:
-                      print(f"  - {h.get('test_name')}: {h.get('issue_text')} ({h.get('filename')}:{h.get('line_number')})")
-                  failed = True
-
-          if os.path.exists("semgrep.sarif"):
-              with open("semgrep.sarif") as f:
-                  sarif = json.load(f)
-              for run in sarif.get("runs", []):
-                  for res in run.get("results", []):
-                      if res.get("level") == "error":
-                          print(f"❌ Semgrep ERROR: {res.get('message', {}).get('text')}")
-                          failed = True
-
-          if failed:
-              print("\n🚨 SAST SECURITY GATE: FAILED (Unresolved Critical/High Issues)")
-              sys.exit(1)
-          else:
-              print("\n✅ SAST SECURITY GATE: PASSED (0 Critical/High findings)")
-          EOF
 
   # ============================================================================
   # STAGE 3: IAC SECURITY & OPA POLICY GATE

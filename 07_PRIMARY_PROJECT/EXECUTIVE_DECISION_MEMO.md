@@ -13,9 +13,9 @@
 
 This memorandum provides the security posture evaluation for the **CLOS Secure Software Factory (Milestone v0.1-RC)** based on automated shift-left pipeline telemetry.
 
-By establishing an unbroken **Evidence Chain** (*Threat ➔ Architecture ➔ Policy-as-Code ➔ Automated Testing ➔ Cryptographic Proof*), the platform provides automated verification for pre-commit secret detection, AST code vulnerability analysis, container supply chain integrity, and Policy-as-Code guardrails. 
+The intended **Evidence Chain** links threats, architecture, policy, tests, and retained evidence. SAST reconciliation and operational signing/deployment evidence remain acceptance gaps.
 
-*Current Staging Status*: Shift-left application and pipeline security gates are actively verified in CI ([PR #15 Run #32972289149](https://github.com/vmanan22/ciso-mastery-framework/actions/runs/32972289149)). Live cloud deployment stages are gated and visibly skipped pending enterprise cloud credential provisioning.
+*Current Staging Status*: v0.1 remains under reconciliation. At head `23a3e47`, the [Semgrep OSS check failed](https://github.com/vmanan22/ciso-mastery-framework/runs/98195127253) despite Stage 2 success. SAST is not verified; the correction requires fresh CI evidence. The other rows below describe historical results, not verification of the corrected head. Live cloud stages were skipped.
 
 ---
 
@@ -26,7 +26,7 @@ The following automated telemetry was captured across the fail-closed pipeline s
 | Control Domain | Implementation | Automated Verification Method | Result | Residual Risk / Status |
 | :--- | :--- | :--- | :---: | :---: |
 | **Credential Security** | Gitleaks CI Gate | Full Git Commit History Audit | ✅ 0 Leaks Detected | 🟢 Low (Shift-left active) |
-| **Code Vulnerabilities** | Semgrep + Bandit AST | Automated SAST Quality Gate | ✅ 0 High/Crit Findings | 🟢 Low (Automated quality gate) |
+| **Code Vulnerabilities** | Semgrep + Bandit AST | Automated SAST Quality Gate | ⚠️ Conflicting checks; correction pending | Unverified — fresh CI required |
 | **Infrastructure Policy** | Checkov + OPA Rego | Conftest Pre-Deploy Evaluation | ✅ 0 Policy Violations | 🟢 Low (IaC guardrails enforced) |
 | **Container Hardening** | Hardened Minimal Runtime | Trivy CVE Scan (Exit-Code 1) | ✅ 0 High/Crit CVEs | 🟢 Low (Base packaging purged) |
 | **API Authentication** | RFC 7519 Bearer JWT | Automated Unit & Startup Tests | ✅ 100% Pass (24/24 Tests) | 🟢 Low (Standard claims & fail-closed startup) |
@@ -45,6 +45,6 @@ The following automated telemetry was captured across the fail-closed pipeline s
 
 ## 4. Recommendation & Next Steps
 
-1. **Maintain v0.1-RC Status**: Keep Milestone v0.1 in *Release Candidate — Evidence Reconciliation In Progress* until enterprise cloud OIDC credentials are provisioned for end-to-end cloud deployment validation.
+1. **Maintain v0.1-RC Status**: Keep Milestone v0.1 in *Release Candidate — Evidence Reconciliation In Progress* until SAST results agree on the corrected head and required end-to-end evidence is retained. Cloud controls remain unverified until live deployment validation.
 2. **Sequenced Progression to v0.2**: Begin Milestone v0.2 (Zero-Trust AI Security Gateway & MCP Tool Broker Lab) strictly after v0.1 acceptance criteria are satisfied, the reconciliation PR is merged, and automated CI evidence is captured.
 3. **Capstone Integration**: Maintain alignment with the planned post-v0.3 **Evidence-Backed vCISO Engagement Simulator** (ADR-006) for synthesizing technical evidence into executive advisory deliverables.

@@ -16,7 +16,7 @@ JWT_ISSUER = os.environ["JWT_ISSUER"]
 JWT_AUDIENCE = os.environ["JWT_AUDIENCE"]
 
 from fastapi.testclient import TestClient
-from containers.app.main import app, validate_auth_config
+from containers.app.main import app
 from containers.app.jwt_validator import create_token
 
 
@@ -25,6 +25,8 @@ class TestApiAuthentication(unittest.TestCase):
     def setUpClass(cls):
         cls.secret = os.environ["JWT_SECRET"]
         cls.client = TestClient(app)
+        cls.client.__enter__()
+        cls.addClassCleanup(cls.client.__exit__, None, None, None)
 
     def test_healthz_unauthenticated(self):
         """Verifies that /healthz is publicly accessible without credentials."""
@@ -127,11 +129,11 @@ class TestApiAuthentication(unittest.TestCase):
 
     def test_startup_fails_when_jwt_secret_missing(self):
         """Verifies that missing JWT_SECRET aborts startup with a critical configuration error."""
-        from containers.app.main import validate_auth_config
         original = os.environ.pop("JWT_SECRET", None)
         try:
             with self.assertRaises(RuntimeError) as ctx:
-                validate_auth_config()
+                with TestClient(app):
+                    self.fail("Startup should reject missing authentication configuration")
             self.assertIn("JWT_SECRET", str(ctx.exception))
         finally:
             if original:
@@ -139,11 +141,11 @@ class TestApiAuthentication(unittest.TestCase):
 
     def test_startup_fails_when_jwt_issuer_missing(self):
         """Verifies that missing JWT_ISSUER aborts startup with a critical configuration error."""
-        from containers.app.main import validate_auth_config
         original = os.environ.pop("JWT_ISSUER", None)
         try:
             with self.assertRaises(RuntimeError) as ctx:
-                validate_auth_config()
+                with TestClient(app):
+                    self.fail("Startup should reject missing authentication configuration")
             self.assertIn("JWT_ISSUER", str(ctx.exception))
         finally:
             if original:
@@ -151,11 +153,11 @@ class TestApiAuthentication(unittest.TestCase):
 
     def test_startup_fails_when_jwt_audience_missing(self):
         """Verifies that missing JWT_AUDIENCE aborts startup with a critical configuration error."""
-        from containers.app.main import validate_auth_config
         original = os.environ.pop("JWT_AUDIENCE", None)
         try:
             with self.assertRaises(RuntimeError) as ctx:
-                validate_auth_config()
+                with TestClient(app):
+                    self.fail("Startup should reject missing authentication configuration")
             self.assertIn("JWT_AUDIENCE", str(ctx.exception))
         finally:
             if original:
