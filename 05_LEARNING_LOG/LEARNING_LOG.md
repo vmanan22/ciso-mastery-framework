@@ -25,7 +25,7 @@ cp templates/LEARNER_PLAN_TEMPLATE.md .clos-local/my_learning_plan.md
 
 When demonstrating capability for job applications, executive portfolios, or open-source maintainership:
 
-1. **Pull Requests**: Submit evidence-backed PRs following the [PR Template](file:///Users/mananvora/CLOS_Kickoff_Mission/templates/VALIDATION_REPORT_TEMPLATE.md).
-2. **Control Mappings**: Update the [Control Evidence Matrix](file:///Users/mananvora/CLOS_Kickoff_Mission/07_PRIMARY_PROJECT/CONTROL_EVIDENCE_MATRIX.md).
-3. **Architectural Decisions**: Submit peer-reviewed ADRs using [ADR Template](file:///Users/mananvora/CLOS_Kickoff_Mission/templates/ADR_TEMPLATE.md).
-4. **Retrospectives**: Document novel failure mode analyses in [Technical Retrospectives](file:///Users/mananvora/CLOS_Kickoff_Mission/04_HALL_OF_PAIN/HALL_OF_PAIN.md).
+1. **Pull Requests**: Submit evidence-backed PRs following the [PR Template](../templates/VALIDATION_REPORT_TEMPLATE.md).
+2. **Control Mappings**: Update the [Control Evidence Matrix](../07_PRIMARY_PROJECT/CONTROL_EVIDENCE_MATRIX.md).
+3. **Architectural Decisions**: Submit peer-reviewed ADRs using [ADR Template](../templates/ADR_TEMPLATE.md).
+4. **Retrospectives**: Document novel failure mode analyses in [Technical Retrospectives](../04_HALL_OF_PAIN/HALL_OF_PAIN.md).

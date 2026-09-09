@@ -15,7 +15,7 @@ Threat ➔ Requirement ➔ Architecture Decision ➔ Control ➔ Implementation 
 ### What You Will Master
 1. **Understand**: STRIDE threat modeling and NIST SP 800-218 (SSDF) requirements.
 2. **Design**: Spec-first API contracts (OpenAPI 3.1) and zero-trust cloud architecture.
-3. **Build**: Hardened FastAPI microservice, distroless non-root containers, and 6-stage fail-closed CI/CD pipelines.
+3. **Build**: Hardened FastAPI microservice, minimal non-root containers, and 6-stage fail-closed CI/CD pipelines.
 4. **Validate**: Policy-as-Code (OPA Rego), AST security scanning (Semgrep/Bandit), and automated cryptographic test suites.
 5. **Lead**: Translating validation evidence into board-level risk metrics and executive decision memos.
 
@@ -32,7 +32,7 @@ Threat ➔ Requirement ➔ Architecture Decision ➔ Control ➔ Implementation 
 ├── CONTROL_EVIDENCE_MATRIX.md     # Traceable Control Status & Verification Links
 ├── EXECUTIVE_DECISION_MEMO.md     # Board-Level Risk & Budget Allocation Memo
 ├── containers/
-│   ├── Dockerfile.hardened        # Multi-stage Distroless Non-Root Container
+│   ├── Dockerfile.hardened        # Multi-stage Minimal Non-Root Container
 │   └── app/
 │       ├── main.py                # Hardened FastAPI App with Bearer JWT
 │       └── jwt_validator.py       # Zero-Dependency RFC 7519 JWT Engine
