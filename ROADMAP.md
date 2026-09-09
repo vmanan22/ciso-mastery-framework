@@ -13,7 +13,7 @@
 │                                                                             │
 │  [v0.1] Trustworthy Foundations & Flagship Secure Software Factory          │
 │         • Fail-closed DevSecOps CI/CD, Bearer JWT Auth, OPA Policy Gate    │
-│         • Status: Completed (Q3 2026)                                       │
+│         • Status: Release Candidate — Evidence Reconciliation In Progress   │
 │                                                                             │
 │  [v0.2] AI Security Engineering & MCP Broker Lab                            │
 │         • Zero-Trust AI Security Gateway, Inbound/Outbound Guards           │
@@ -27,7 +27,7 @@
 │                                                                             │
 │  [Post-v0.3 Capstone] Evidence-Backed vCISO Engagement Simulator             │
 │         • Cross-Track Capstone synthesizing Tracks 2, 6, 7, and 8           │
-│         • Board Memos, Risk Registers & Handover from real CI/CD evidence   │
+│         • Evidence feeds from DevSecOps (T3), Cloud (T4), and AI (T5)       │
 │         • Status: Planned (Target: Q2 2027)                                 │
 │                                                                             │
 │  [v1.0] Community Operating System & Multi-Track Ecosystem                  │
@@ -42,11 +42,12 @@
 
 ## 📦 Detailed Milestone Breakdown
 
-### 🎯 Version 0.1 — Trustworthy Foundations & Flagship Secure Software Factory
+### 🎯 Version 0.1 — Trustworthy Foundations & Flagship Secure Software Factory (v0.1-RC)
 * **Goal**: Deliver an uncompromised, evidence-backed DevSecOps reference architecture.
+* **Status**: *Release Candidate — Evidence Reconciliation In Progress* (Target: Q3 2026).
 * **Key Deliverables**:
   - [x] Fail-Closed 6-Stage CI/CD Pipeline (Gitleaks, Bandit, Semgrep, Checkov, OPA, Hardened Container, Trivy, Syft, Cosign).
-  - [x] Zero-Dependency HMAC-SHA256 Bearer JWT Auth in FastAPI Microservice.
+  - [x] Zero-Dependency HMAC-SHA256 Bearer JWT Auth with RFC 7519 Standard Claims in FastAPI Microservice.
   - [x] Single Canonical Architecture Specification with C4 Container Diagram & ADRs.
   - [x] Single Canonical Control & Evidence Matrix mapping all controls to automated test evidence.
   - [x] Standard Apache-2.0 open-source licensing.
@@ -78,7 +79,8 @@
 
 ### 🎓 Post-v0.3 Capstone — Evidence-Backed vCISO Engagement Simulator
 * **Goal**: Provide a cross-track capstone experience synthesizing technical control assurance into end-to-end executive advisory deliverables.
-* **Consumes**: Track 2 (Threat Modeling & Risk Quantification), Track 6 (Security Governance & Control Assurance), Track 7 (Cloud & AI Security Architecture), and Track 8 (Executive Leadership & Board Communication).
+* **Primary Synthesis Tracks**: Track 2 (Security Architecture), Track 6 (Assurance, Validation, Red Teaming & Pentesting), Track 7 (Security Operations & Resilience), and Track 8 (CISO Operations, Enterprise Risk, Budgeting & Board Communication).
+* **Technical Evidence Feeds**: Consumes machine-readable evidence produced by Track 3 (DevSecOps), Track 4 (Cloud Security), and Track 5 (AI Security).
 * **Key Deliverables**:
   - [ ] Engagement Scope & Charter Template for synthetic organization (e.g., *Acme FinTech*).
   - [ ] Evidence-Confidence Assessment evaluating machine-readable scanner outputs.
