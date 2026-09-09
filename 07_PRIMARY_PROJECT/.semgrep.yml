@@ -31,18 +31,21 @@ rules:
           @$APP.$METHOD(...)
           def $FUNC(...):
               ...
+      - metavariable-regex:
+          metavariable: "$METHOD"
+          regex: "^(get|post|put|patch|delete|head|options)$"
       - pattern-not: |
           @$APP.$METHOD(...)
           def $FUNC(..., $AUTH: ... = Depends(...), ...):
               ...
       - pattern-not: |
-          @$APP.$METHOD("/healthz", ...)
+          @$APP.get("/healthz", ...)
           def $FUNC(...):
               ...
     message: |
       FastAPI route '$FUNC' is missing an authentication dependency.
       Add `auth: AuthUser = Depends(verify_token)` to enforce JWT validation.
-      Exception: /healthz routes are explicitly excluded.
+      Exception: only GET /healthz is explicitly excluded.
     severity: ERROR
     languages: [python]
     metadata:
