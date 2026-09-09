@@ -1,14 +1,13 @@
 # ==============================================================================
 # Hardened Multi-Stage Dockerfile (Zero-CVE & Minimal Attack Surface)
-# Target: Distroless Non-Root Runtime
+# Target: Minimal Non-Root Hardened Runtime
 # ==============================================================================
 
 # ------------------------------------------------------------------------------
-# Stage 1: Build & Dependency Isolation Environment
+# Stage 1: Build & Pure Dependency Isolation
 # ------------------------------------------------------------------------------
 FROM python:3.11-slim-bookworm AS builder
 
-# Prevent python from writing pyc files and buffering stdout
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
@@ -19,37 +18,48 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends gcc python3-dev && \
     rm -rf /var/lib/apt/lists/*
 
-# Create virtual environment to isolate dependencies cleanly
-RUN python -m venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
-
 COPY app/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Install pure runtime dependencies into /opt/packages
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir --target=/opt/packages -r requirements.txt
 
 COPY app/ .
 
 # ------------------------------------------------------------------------------
-# Stage 2: Minimal Distroless Production Runtime (Zero Shell, Non-Root)
+# Stage 2: Hardened Non-Root Production Runtime
 # ------------------------------------------------------------------------------
-# Google Distroless contains ONLY Python and standard libs. No bash/sh, apt, curl.
-FROM gcr.io/distroless/python3-debian12:nonroot AS runner
+FROM python:3.11-slim-bookworm AS runner
 
 WORKDIR /app
 
-# Copy virtual environment and app from builder
-COPY --from=builder /opt/venv /opt/venv
-COPY --from=builder /app /app
+# Apply latest Debian security updates and remove base image build packaging tools
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    rm -rf /var/lib/apt/lists/* && \
+    rm -rf /usr/local/lib/python3.11/site-packages/pip* \
+           /usr/local/lib/python3.11/site-packages/setuptools* \
+           /usr/local/lib/python3.11/site-packages/wheel* \
+           /usr/local/lib/python3.11/site-packages/jaraco* \
+           /usr/local/lib/python3.11/site-packages/_distutils_hack*
 
-ENV PATH="/opt/venv/bin:$PATH" \
-    PYTHONPATH="/opt/venv/lib/python3.11/site-packages"
+# Create non-root unprivileged user (UID 65532)
+RUN groupadd -g 65532 nonroot && \
+    useradd -u 65532 -g 65532 -m -s /sbin/nologin nonroot
+
+# Copy pure runtime dependencies and application
+COPY --from=builder --chown=65532:65532 /opt/packages /opt/packages
+COPY --from=builder --chown=65532:65532 /app /app
+
+ENV PATH="/opt/packages/bin:$PATH" \
+    PYTHONPATH="/opt/packages"
 
 # Enforce Non-Root Execution (UID 65532: nonroot)
 USER nonroot:nonroot
 
 EXPOSE 8080
 
-# Health check using python urllib (no curl available in distroless!)
+# Health check using python urllib
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-  CMD ["/usr/bin/python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/healthz')"]
+  CMD ["python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/healthz')"]
 
-ENTRYPOINT ["/usr/bin/python3", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+ENTRYPOINT ["python3", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]

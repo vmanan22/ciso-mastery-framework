@@ -40,3 +40,10 @@ variable "pipeline_service_account" {
   # This is created during Workload Identity Federation setup (Step 0).
   # Passed in from GitHub Actions as TF_VAR_pipeline_service_account.
 }
+
+variable "gcs_service_account_email" {
+  type        = string
+  default     = "service-214706612125@gs-project-accounts.iam.gserviceaccount.com"
+  description = "Service account email used by GCS for KMS CMEK encryption/decryption operations."
+}
+
