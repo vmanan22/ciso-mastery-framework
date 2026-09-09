@@ -41,7 +41,7 @@ Every security claim in CLOS must be backed by an automated test, cryptographic 
 ### Explicit Non-Goals
 * **Not a Commercial SaaS Product**: CLOS is an open educational operating system and reference architecture, not a commercial enterprise vendor product.
 * **Not a Theoretical Textbook**: CLOS does not contain static slide decks or unsupported advice; every concept must be reproducible.
-* **No Proprietary Vendor Lock-in**: All reference labs utilize open standards (OpenAPI, OPA Rego, SPDX, Cosign, Distroless, Terraform/OpenTofu).
+* **No Proprietary Vendor Lock-in**: All reference labs utilize open standards (OpenAPI, OPA Rego, SPDX, Cosign, Minimal Non-Root Containers, Terraform/OpenTofu).
 * **No Unverified Claims**: A control is never marked "implemented" or "verified" without automated proof.
 
 ---
@@ -71,4 +71,4 @@ Every security claim in CLOS must be backed by an automated test, cryptographic 
 
 * **100% Reproducibility**: Any developer can clone the repository and run the documented test suites locally with zero proprietary dependencies.
 * **Zero False-Greens**: CI/CD pipelines deterministically fail on policy violations, CVE thresholds, or secret leaks.
-* **Full Auditability**: 100% of claimed security controls map to verifiable evidence paths in [CONTROL_EVIDENCE_MATRIX.md](file:///Users/mananvora/CLOS_Kickoff_Mission/07_PRIMARY_PROJECT/CONTROL_EVIDENCE_MATRIX.md).
+* **Full Auditability**: 100% of claimed security controls map to verifiable evidence paths in [CONTROL_EVIDENCE_MATRIX.md](07_PRIMARY_PROJECT/CONTROL_EVIDENCE_MATRIX.md).

@@ -51,7 +51,7 @@ In CLOS:
 
 The following components are fully implemented and verified via automated tests:
 
-* **Fail-Closed 6-Stage DevSecOps CI/CD**: Gitleaks secret scanning, Semgrep AST + Bandit SAST, Checkov IaC scanning, OPA Rego policy enforcement, Distroless container builds, Trivy CVE scanning, Syft SPDX SBOM generation, and keyless GCP OIDC authentication.
+* **Fail-Closed 6-Stage DevSecOps CI/CD**: Gitleaks secret scanning, Semgrep AST + Bandit SAST, Checkov IaC scanning, OPA Rego policy enforcement, hardened minimal container builds, Trivy CVE scanning, Syft SPDX SBOM generation, and keyless GCP OIDC authentication.
 * **Hardened Microservice with Bearer JWT**: RFC 7519 HMAC-SHA256 token verification, OWASP security headers (CSP, HSTS, X-Frame-Options), and unauthenticated health probes.
 * **Cloud KMS CMEK & Hardened Storage**: Terraform IaC enforcing AES-256 customer-managed encryption keys with automated 90-day rotation and uniform bucket-level access.
 * **Policy-as-Code Gate**: Open Policy Agent (OPA) Rego rules blocking unencrypted storage, public access, and dangerous IAM roles before deployment.
