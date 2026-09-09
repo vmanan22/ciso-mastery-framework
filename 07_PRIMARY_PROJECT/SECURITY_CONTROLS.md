@@ -15,7 +15,7 @@
 | SC-05 | Immutable append-only audit trail & SHA256 integrity | Audit | R1, T1 | SOC 2 CC7.2, ISO 27001 A.12.4.1 | 🟡 High | ✅ Implemented |
 | SC-06 | SAST & SCA scanning prior to code merge | Application | T1, E2 | OWASP ASVS V5, NIST SSDF PW.4 | 🔴 Critical | ✅ Implemented |
 | SC-07 | IaC Policy-as-Code enforcement (OPA / Rego) | Infrastructure | I1, R2 | SOC 2 CC7.1, CIS Benchmark | 🔴 Critical | ✅ Implemented |
-| SC-08 | Container security: Distroless base & non-root user | Workload | E2 | CIS Docker Benchmark 4.1 | 🔴 Critical | 🔨 In progress |
+| SC-08 | Container security: Minimal hardened base & non-root user | Workload | E2 | CIS Docker Benchmark 4.1 | 🔴 Critical | ✅ Implemented |
 | SC-09 | Signed container images (Cosign / Sigstore) | Supply Chain | T2, E2 | SLSA Level 3, NIST SSDF PW.8 | 🟡 High | 🔨 In progress |
 | SC-10 | DAST scans on active endpoints prior to production | Runtime | I2, D1 | OWASP ASVS V14 | 🟡 High | 🔨 In progress |
 
@@ -31,10 +31,10 @@
 | Audit | 1 | 1 | 100% |
 | Application | 1 | 1 | 100% |
 | Infrastructure | 1 | 1 | 100% |
-| Workload | 1 | 0 | 0% |
+| Workload | 1 | 1 | 100% |
 | Supply Chain | 1 | 0 | 0% |
 | Runtime | 1 | 0 | 0% |
-| **Total** | **10** | **6** | **60%** |
+| **Total** | **10** | **7** | **70%** |
 
 ---
 

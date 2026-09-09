@@ -34,7 +34,7 @@ Rather than writing code first, we author the formal contract in [`docs/openapi.
 
 ### Architectural Decisions (ADRs)
 * **ADR-01**: Keyless Workload Identity Federation (WIF) over static JSON keys.
-* **ADR-02**: Multi-stage Google Distroless containers (non-root UID 65532).
+* **ADR-02**: Multi-stage minimal non-root containers (UID 65532).
 * **ADR-03**: Policy-as-Code (OPA Rego) evaluating Terraform plan JSON.
 
 *Reference: [ARCHITECTURE.md](ARCHITECTURE.md)*
