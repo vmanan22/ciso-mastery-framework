@@ -30,7 +30,7 @@ graph TD
         GitCommit([Git Push / PR]) --> Gate1[Stage 1: Gitleaks Secret Scan]
         Gate1 --> Gate2[Stage 2: Semgrep & Bandit SAST]
         Gate2 --> Gate3[Stage 3: Checkov & OPA Policy Gate]
-        Gate3 --> Gate4[Stage 4: Distroless Build + Trivy + Syft SBOM]
+        Gate3 --> Gate4[Stage 4: Hardened Container Build + Trivy + Syft SBOM]
         Gate4 --> Gate5[Stage 5: Keyless WIF OIDC + Terraform Plan]
         Gate5 --> Gate6[Stage 6: Cloud Deploy on Main Merge]
     end
@@ -55,8 +55,8 @@ graph TD
                      ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ TRUST BOUNDARY 2: Runtime Container Sandbox                 │
-│ • Distroless Non-Root Base (UID 65532)                      │
-│ • Zero Shell, Read-Only Filesystem                          │
+│ • Hardened Minimal Non-Root Base (UID 65532)                │
+│ • Zero Build Tools, Read-Only Filesystem Compatible         │
 │ • Ephemeral Process Memory                                  │
 └─────────────────────────────────────────────────────────────┘
                      │ (Keyless Short-Lived OIDC)
@@ -76,7 +76,7 @@ graph TD
 | ADR ID | Decision Title | Chosen Solution | Rationale & Trade-Offs |
 | :---: | :--- | :--- | :--- |
 | **ADR-01** | **Identity & Access Management** | GCP Workload Identity Federation (WIF) | Eliminates long-lived JSON service account keys; exchanges short-lived OIDC tokens. |
-| **ADR-02** | **Container Hardening** | Multi-stage Google Distroless | Strips package managers, shells (`/bin/sh`), and curl to prevent post-exploitation lateral movement. |
+| **ADR-02** | **Container Hardening** | Multi-Stage Minimal Non-Root Runtime | Utilizes `python:3.11-slim` with stripped build packaging metadata, isolated dependencies, and non-root UID 65532. |
 | **ADR-03** | **Policy-as-Code Engine** | Open Policy Agent (OPA) / Conftest | Enforces declarative security invariants against Terraform plans before cloud provisioning. |
 | **ADR-04** | **Data Protection at Rest** | Cloud KMS CMEK (AES-256) | Guarantees organizational control over encryption keys with automated 90-day key rotation. |
 | **ADR-05** | **Supply Chain Integrity** | Sigstore Cosign + Syft SPDX SBOM | Provides cryptographic provenance and verifiable attestation for all container artifacts. |
@@ -85,7 +85,7 @@ graph TD
 
 ## 5. References & Related Documents
 
-* **Threat Modeling**: [STRIDE Threat Model](file:///Users/mananvora/CLOS_Kickoff_Mission/07_PRIMARY_PROJECT/THREAT_MODEL.md)
-* **AI Threat Modeling**: [AI Security Threat Model](file:///Users/mananvora/CLOS_Kickoff_Mission/07_PRIMARY_PROJECT/ai_security_gateway/docs/AI_THREAT_MODEL.md)
-* **API Specification**: [OpenAPI 3.1 Contract](file:///Users/mananvora/CLOS_Kickoff_Mission/07_PRIMARY_PROJECT/docs/openapi.yaml)
-* **Control Evidence**: [Control & Evidence Matrix](file:///Users/mananvora/CLOS_Kickoff_Mission/07_PRIMARY_PROJECT/CONTROL_EVIDENCE_MATRIX.md)
+* **Threat Modeling**: [STRIDE Threat Model](THREAT_MODEL.md)
+* **AI Threat Modeling**: [AI Security Threat Model](ai_security_gateway/docs/AI_THREAT_MODEL.md)
+* **API Specification**: [OpenAPI 3.1 Contract](docs/openapi.yaml)
+* **Control Evidence**: [Control & Evidence Matrix](CONTROL_EVIDENCE_MATRIX.md)

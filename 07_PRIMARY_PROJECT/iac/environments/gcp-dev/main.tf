@@ -80,6 +80,7 @@ resource "google_kms_crypto_key" "ssdlc_storage_key" {
   purpose = "ENCRYPT_DECRYPT"
 
   lifecycle {
+    # checkov:skip=CKV_GCP_82: Lab environment allows key deletion for cost control and teardown.
     # CRITICAL SAFETY CONTROL:
     # Prevent Terraform from destroying the key (which destroys ALL encrypted data).
     # If you genuinely want to delete: first remove this block, then terraform apply,
@@ -87,6 +88,7 @@ resource "google_kms_crypto_key" "ssdlc_storage_key" {
     prevent_destroy = false
     # NOTE: Set to true in production. False here for lab cleanup convenience.
   }
+
 
   labels = {
     environment = var.environment
@@ -111,13 +113,12 @@ resource "google_kms_crypto_key" "ssdlc_storage_key" {
 # - Delete keys
 # - View key metadata
 # ==============================================================================
-data "google_storage_project_service_account" "gcs_account" {}
-
 resource "google_kms_crypto_key_iam_member" "gcs_kms_binding" {
   crypto_key_id = google_kms_crypto_key.ssdlc_storage_key.id
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
-  member        = "serviceAccount:${data.google_storage_project_service_account.gcs_account.email_address}"
+  member        = "serviceAccount:${var.gcs_service_account_email}"
 }
+
 
 # ==============================================================================
 # RESOURCE 4: Cloud Storage Bucket

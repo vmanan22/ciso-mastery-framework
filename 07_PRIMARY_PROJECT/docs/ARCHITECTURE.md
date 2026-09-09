@@ -49,7 +49,7 @@ The objective of this platform is to build **Continuous Security Verification & 
 │                                 ▼                                                                 │
 │   ┌───────────────────────────────────────────────────────────────────────────────────────────┐   │
 │   │ Stage 3: Container Hardening, SBOM & Cryptographic Attestation                            │   │
-│   │  ├── Multi-stage Distroless Container Build                                               │   │
+│   │  ├── Multi-stage Hardened Minimal Container Build                                         │   │
 │   │  ├── Trivy / Grype (Container image CVE vulnerability scan)                               │   │
 │   │  ├── Syft (Generate Software Bill of Materials - SBOM)                                    │   │
 │   │  └── Cosign (Cryptographic signing of container digest via Keyless OIDC)                  │   │
@@ -91,7 +91,7 @@ The objective of this platform is to build **Continuous Security Verification & 
 |-----------------------|-----------------|------------------------|---------------------|
 | **Secret Scanning Placement** | Shift-Left (Pre-Commit + CI) | CI-Only Scanning | Pre-commit prevents secrets from ever touching git history. CI scanning acts as the non-bypassable safety net. |
 | **Cloud Authentication** | OIDC Keyless Federation | Static Service Account Keys | Static keys leak frequently via logs or developer machines. OIDC eliminates static credentials entirely. |
-| **Container Base Image** | Distroless (Google Container Tools) | Standard Ubuntu/Debian Base | Distroless removes shell (`/bin/sh`), package manager (`apt`), and standard utilities, eliminating 90%+ of OS-level CVEs and drastically reducing container escape primitives. |
+| **Container Base Image** | Minimal Hardened (`python:3.11-slim`) | Standard Ubuntu/Debian Base | Hardened minimal base with stripped build packaging metadata, runtime-only isolation, and nonroot UID 65532, eliminating OS-level CVEs while ensuring predictable offline dependencies. |
 | **Policy Engine** | OPA (Rego) Declarative Engine | Custom Shell Script Scanning | Custom scripts break easily, lack standardized AST parsing, and are unmaintainable at scale. OPA provides formal policy language & testing framework. |
 
 ---

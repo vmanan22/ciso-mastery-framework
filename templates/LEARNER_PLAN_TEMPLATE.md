@@ -21,7 +21,7 @@
 
 ### Week 2: Build Application & Pipeline
 * [ ] Implement secure microservice with Bearer JWT authentication.
-* [ ] Build multi-stage hardened distroless container.
+* [ ] Build multi-stage hardened minimal non-root container.
 * [ ] Configure 6-stage fail-closed DevSecOps CI/CD workflow.
 * **Deliverable**: [e.g., Green CI/CD run with authentic scan reports]
 
