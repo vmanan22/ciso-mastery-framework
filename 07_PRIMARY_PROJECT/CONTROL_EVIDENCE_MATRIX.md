@@ -25,7 +25,7 @@
 | **SC-03** | Cloud KMS CMEK (AES-256) Encryption at Rest with 90-Day Rotation | [`iac/environments/gcp-dev/main.tf`](iac/environments/gcp-dev/main.tf) | Checkov CKV_GCP_82 & OPA Rego Gate | IaC Policy Verified; Operational CMEK pending live cloud deploy | **implemented** | — |
 | **SC-04** | Hardened Security Headers (CSP, HSTS, X-Frame-Options, X-Content-Type) | [`containers/app/main.py`](containers/app/main.py) | [`tests/test_api_auth.py`](tests/test_api_auth.py) | [PR #15 CI Run #32972289149](https://github.com/vmanan22/ciso-mastery-framework/actions/runs/32972289149) (Stage 2 Integration Tests) | **verified** | 2026-08-26 |
 | **SC-05** | Pre-Commit & CI Secret Scanning with Full History Audit | [`.gitleaks.toml`](.gitleaks.toml) | Gitleaks Stage 1 CI Job | [PR #15 CI Run #32972289149](https://github.com/vmanan22/ciso-mastery-framework/actions/runs/32972289149) (0 Leaks Detected) | **verified** | 2026-08-26 |
-| **SC-06** | Static Application Security Testing (SAST) with Quality Gate | [`.semgrep.yml`](.semgrep.yml) + Bandit | SAST Stage 2 native scanner exit status + gate regression tests | Correction pending CI proof; [prior head Semgrep failure](https://github.com/vmanan22/ciso-mastery-framework/runs/98195127253) contradicts Stage 2 success | **in progress** | — |
+| **SC-06** | Static Application Security Testing (SAST) with Quality Gate | [`.semgrep.yml`](.semgrep.yml) + Bandit | SAST Stage 2 native scanner exit status + gate regression tests | [Run #34255407058](https://github.com/vmanan22/ciso-mastery-framework/actions/runs/34255407058), source commit `8c92647e1283f97330f270382bfab9efc039a3ed`; Stage 2 and Semgrep OSS both passed; retained `sast-evidence` artifact | **verified** | 2026-09-08 |
 | **SC-07** | Infrastructure-as-Code Policy-as-Code Enforcement (OPA / Rego) | [`policies/iac_policies/`](policies/iac_policies/) | Conftest evaluation against Terraform Plan | [PR #15 CI Run #32972289149](https://github.com/vmanan22/ciso-mastery-framework/actions/runs/32972289149) (Stage 3 Conftest Gate) | **verified** | 2026-08-26 |
 | **SC-08** | Container Hardening: Minimal Non-Root Runtime (UID 65532) | [`containers/Dockerfile.hardened`](containers/Dockerfile.hardened) | Docker buildx + Trivy scan | [PR #15 CI Run #32972289149](https://github.com/vmanan22/ciso-mastery-framework/actions/runs/32972289149) (0 High/Crit CVEs) | **verified** | 2026-08-26 |
 | **SC-09** | Cryptographic Container Image Signing & Attestation (Cosign) | [`.github/workflows/devsecops.yml`](../.github/workflows/devsecops.yml) | Sigstore Rekor transparency log | Configured in CI workflow (Runs on main push) | **in progress** | — |
@@ -39,8 +39,8 @@
 ## 3. Coverage Summary
 
 * **Total Controls**: 13
-* **Verified (Automated CI Proof)**: 5 (38%)
+* **Verified (Automated CI Proof)**: 6 (46%)
 * **Implemented / Locally Tested**: 2 (15%)
-* **In Progress**: 2 (15%)
+* **In Progress**: 1 (8%)
 * **Planned**: 4 (31%)
-* **Reference CI Run**: [PR #15 Run #32972289149](https://github.com/vmanan22/ciso-mastery-framework/actions/runs/32972289149) (Historical reference only; separate Semgrep check failed on head `23a3e47`. SAST reconciliation pending; cloud stages skipped.)
+* **Reference CI Run**: [PR #15 Run #32972289149](https://github.com/vmanan22/ciso-mastery-framework/actions/runs/32972289149) (Historical reference only; separate Semgrep check failed on head `23a3e47`. Superseded for SC-06 by run #34255407058 at source commit `8c92647`; cloud stages skipped.)

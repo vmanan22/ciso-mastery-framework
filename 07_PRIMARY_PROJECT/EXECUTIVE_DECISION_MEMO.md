@@ -13,9 +13,9 @@
 
 This memorandum provides the security posture evaluation for the **CLOS Secure Software Factory (Milestone v0.1-RC)** based on automated shift-left pipeline telemetry.
 
-The intended **Evidence Chain** links threats, architecture, policy, tests, and retained evidence. SAST reconciliation and operational signing/deployment evidence remain acceptance gaps.
+The intended **Evidence Chain** links threats, architecture, policy, tests, and retained evidence. Operational signing/deployment evidence remains an acceptance gap.
 
-*Current Staging Status*: v0.1 remains under reconciliation. At head `23a3e47`, the [Semgrep OSS check failed](https://github.com/vmanan22/ciso-mastery-framework/runs/98195127253) despite Stage 2 success. SAST is not verified; the correction requires fresh CI evidence. The other rows below describe historical results, not verification of the corrected head. Live cloud stages were skipped.
+*Current Staging Status*: At source commit `8c92647e1283f97330f270382bfab9efc039a3ed`, [run #34255407058](https://github.com/vmanan22/ciso-mastery-framework/actions/runs/34255407058) passed Stage 2 and the separate Semgrep OSS check, resolving the prior contradiction. SC-06 is verified against that exact source commit and retained SAST evidence. Other rows below retain historical results unless specified. Live cloud stages were skipped; v0.1 remains a release candidate.
 
 ---
 
@@ -26,7 +26,7 @@ The following automated telemetry was captured across the fail-closed pipeline s
 | Control Domain | Implementation | Automated Verification Method | Result | Residual Risk / Status |
 | :--- | :--- | :--- | :---: | :---: |
 | **Credential Security** | Gitleaks CI Gate | Full Git Commit History Audit | ✅ 0 Leaks Detected | 🟢 Low (Shift-left active) |
-| **Code Vulnerabilities** | Semgrep + Bandit AST | Automated SAST Quality Gate | ⚠️ Conflicting checks; correction pending | Unverified — fresh CI required |
+| **Code Vulnerabilities** | Semgrep + Bandit AST | Automated SAST Quality Gate | Stage 2 and Semgrep OSS passed at `8c92647` | Verified for this source snapshot; not a claim of zero residual risk |
 | **Infrastructure Policy** | Checkov + OPA Rego | Conftest Pre-Deploy Evaluation | ✅ 0 Policy Violations | 🟢 Low (IaC guardrails enforced) |
 | **Container Hardening** | Hardened Minimal Runtime | Trivy CVE Scan (Exit-Code 1) | ✅ 0 High/Crit CVEs | 🟢 Low (Base packaging purged) |
 | **API Authentication** | RFC 7519 Bearer JWT | Automated Unit & Startup Tests | ✅ 100% Pass (24/24 Tests) | 🟢 Low (Standard claims & fail-closed startup) |
