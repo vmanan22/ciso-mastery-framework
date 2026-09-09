@@ -133,7 +133,7 @@ jobs:
           category: semgrep
 
       - name: "Upload SAST Reports as Artifacts"
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: sast-evidence
@@ -274,7 +274,7 @@ jobs:
           output-file: sbom.spdx.json
 
       - name: "Upload SBOM as Pipeline Artifact"
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: "sbom-spdx-${{ github.sha }}"
           path: sbom.spdx.json
