@@ -32,6 +32,8 @@ jobs:
     name: "🛡️ Pipeline Integrity — Fail-Closed Verifier"
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    outputs:
+      has_gcp_creds: ${{ steps.check-gcp-creds.outputs.has_gcp_creds }}
     steps:
       - name: "Checkout Source Code"
         uses: actions/checkout@v4
@@ -44,6 +46,17 @@ jobs:
       - name: "Verify No Failure-Masking Patterns in Workflows"
         run: |
           python3 scripts/verify_fail_closed.py
+
+      - name: "Detect GCP Cloud Credentials Availability"
+        id: check-gcp-creds
+        run: |
+          if [ -n "${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}" ]; then
+            echo "has_gcp_creds=true" >> $GITHUB_OUTPUT
+            echo "✅ GCP OIDC configuration detected in repository secrets."
+          else
+            echo "has_gcp_creds=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ GCP Workload Identity Provider not configured in repository secrets. Cloud deployment stages will be visibly skipped."
+          fi
 
   # ============================================================================
   # STAGE 1: SECRET LEAK SCAN (Gitleaks)
@@ -65,10 +78,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # ============================================================================
-  # STAGE 2: SAST CODE SCAN (Semgrep + Bandit)
+  # STAGE 2: SAST CODE SCAN & UNIT TEST GATE (Semgrep + Bandit + Unit Tests)
   # ============================================================================
   stage-2-sast-scan:
-    name: "🔍 Stage 2 — SAST Code Scan (Semgrep + Bandit)"
+    name: "🔍 Stage 2 — SAST Code Scan & Unit Tests (Semgrep + Bandit)"
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: [stage-1-secret-scan]
@@ -84,32 +97,37 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: "Install SAST Toolchain"
+      - name: "Install Dependencies & Test Toolchain"
         run: |
           python3 -m pip install --upgrade pip
-          pip install semgrep bandit[toml]
+          pip install semgrep bandit[toml] pytest httpx
+          pip install -r 07_PRIMARY_PROJECT/containers/app/requirements.txt
+
+      - name: "Run Microservice Security & Authentication Unit Tests"
+        working-directory: 07_PRIMARY_PROJECT
+        run: |
+          echo "=== Running Microservice Authentication & Security Unit Tests ==="
+          python3 -m unittest discover -s tests -p "test_*.py" -v
+
+      - name: "Test SAST Rules & Native Fail-Closed Gate"
+        run: |
+          semgrep --test --config 07_PRIMARY_PROJECT/.semgrep.yml tests/semgrep/routes.py
+          python3 -m unittest discover -s tests -p "test_*.py" -v
 
       - name: "Bandit — Python Security Analysis"
         run: |
           echo "=== Running Bandit Security Linter ==="
-          # Generate JSON report; Bandit exits non-zero if issues are found
-          bandit -r 07_PRIMARY_PROJECT/containers/app/ -ll --format json -o bandit-results.json --exit-zero
+          bandit -r 07_PRIMARY_PROJECT/containers/app/ -lll --format json -o bandit-results.json
           cat bandit-results.json
 
       - name: "Semgrep — OWASP Top 10 & Custom Security Rules"
         run: |
           echo "=== Running Semgrep AST Analysis ==="
-          semgrep scan \
-            --config=auto \
-            --config=07_PRIMARY_PROJECT/.semgrep.yml \
-            --sarif \
-            --output=semgrep.sarif \
-            07_PRIMARY_PROJECT/containers/app/
+          bash scripts/run_semgrep.sh
 
       - name: "Upload Semgrep SARIF to GitHub Security"
         uses: github/codeql-action/upload-sarif@v3
         if: always()
-        continue-on-error: true
         with:
           sarif_file: semgrep.sarif
           category: semgrep
@@ -123,38 +141,6 @@ jobs:
             bandit-results.json
             semgrep.sarif
           retention-days: 30
-
-      - name: "Evaluate SAST Quality Gate (Fail-Closed)"
-        run: |
-          python3 - <<'EOF'
-          import json, sys, os
-
-          failed = False
-          if os.path.exists("bandit-results.json"):
-              with open("bandit-results.json") as f:
-                  data = json.load(f)
-              high_findings = [r for r in data.get("results", []) if r.get("issue_severity") == "HIGH"]
-              if high_findings:
-                  print(f"❌ Bandit detected {len(high_findings)} HIGH severity findings:")
-                  for h in high_findings:
-                      print(f"  - {h.get('test_name')}: {h.get('issue_text')} ({h.get('filename')}:{h.get('line_number')})")
-                  failed = True
-
-          if os.path.exists("semgrep.sarif"):
-              with open("semgrep.sarif") as f:
-                  sarif = json.load(f)
-              for run in sarif.get("runs", []):
-                  for res in run.get("results", []):
-                      if res.get("level") == "error":
-                          print(f"❌ Semgrep ERROR: {res.get('message', {}).get('text')}")
-                          failed = True
-
-          if failed:
-              print("\n🚨 SAST SECURITY GATE: FAILED (Unresolved Critical/High Issues)")
-              sys.exit(1)
-          else:
-              print("\n✅ SAST SECURITY GATE: PASSED (0 Critical/High findings)")
-          EOF
 
   # ============================================================================
   # STAGE 3: IAC SECURITY & OPA POLICY GATE
@@ -193,17 +179,7 @@ jobs:
             -d 07_PRIMARY_PROJECT/iac/environments/gcp-dev \
             --framework terraform \
             --skip-check CKV_GCP_62 \
-            --output cli \
-            --output sarif \
-            --output-file-path checkov.sarif
-
-      - name: "Upload Checkov SARIF"
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        continue-on-error: true
-        with:
-          sarif_file: checkov.sarif
-          category: checkov-iac
+            --output cli
 
       - name: "Setup OPA & Conftest Policy Engine"
         run: |
@@ -222,6 +198,8 @@ jobs:
           TF_VAR_pipeline_service_account: "ssdlc-pipeline@ssdlc-platform-dev.iam.gserviceaccount.com"
 
       - name: "Generate Terraform Plan JSON for OPA Gate"
+        env:
+          GOOGLE_OAUTH_ACCESS_TOKEN: "ya29.mock_token_for_offline_dry_run_evaluation"
         run: |
           cd 07_PRIMARY_PROJECT/iac/environments/gcp-dev
           terraform plan \
@@ -231,6 +209,7 @@ jobs:
             -var="pipeline_service_account=ssdlc-pipeline@ssdlc-platform-dev.iam.gserviceaccount.com"
           terraform show -json tfplan.binary > /tmp/tfplan.json
           echo "✅ Authentic Terraform Plan JSON generated for OPA evaluation"
+
 
       - name: "OPA / Conftest — Policy-as-Code Evaluation (Fail-Closed)"
         run: |
@@ -324,7 +303,8 @@ jobs:
     name: "🌐 Stage 5 — GCP Terraform Plan (OIDC Auth)"
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [stage-4-container-security]
+    needs: [stage-4-container-security, pipeline-integrity-check]
+    if: needs.pipeline-integrity-check.outputs.has_gcp_creds == 'true'
     permissions:
       contents: read
       id-token: write
@@ -333,31 +313,18 @@ jobs:
       - name: "Checkout Source Code"
         uses: actions/checkout@v4
 
-      - name: "Check Cloud Credentials Availability"
-        id: check-creds
-        run: |
-          if [ -z "${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}" ]; then
-            echo "has_creds=false" >> $GITHUB_OUTPUT
-            echo "::notice::GCP Workload Identity Provider not configured in repository secrets. Cloud plan skipped."
-          else
-            echo "has_creds=true" >> $GITHUB_OUTPUT
-          fi
-
       - name: "Authenticate to GCP via Workload Identity Federation"
-        if: steps.check-creds.outputs.has_creds == 'true'
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
       - name: "Setup Terraform"
-        if: steps.check-creds.outputs.has_creds == 'true'
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.9.0"
 
-      - name: "Terraform Init & Plan (Fail-Closed)"
-        if: steps.check-creds.outputs.has_creds == 'true'
+      - name: "Terraform Init & Plan (Fail-Closed Immutable Artifact)"
         env:
           TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
           TF_VAR_pipeline_service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
@@ -366,8 +333,20 @@ jobs:
           terraform init
           terraform plan \
             -no-color \
+            -out=tfplan.binary \
             -var="project_id=${{ secrets.GCP_PROJECT_ID }}" \
             -var="pipeline_service_account=${{ secrets.GCP_SERVICE_ACCOUNT }}"
+          sha256sum tfplan.binary > tfplan.sha256
+          echo "✅ Immutable Terraform plan & SHA-256 digest generated."
+
+      - name: "Upload Terraform Plan Artifact"
+        uses: actions/upload-artifact@v4
+        with:
+          name: "gcp-tfplan-${{ github.sha }}"
+          path: |
+            07_PRIMARY_PROJECT/iac/environments/gcp-dev/tfplan.binary
+            07_PRIMARY_PROJECT/iac/environments/gcp-dev/tfplan.sha256
+          retention-days: 7
 
   # ============================================================================
   # STAGE 6: GCP TERRAFORM APPLY (Deploy to Cloud)
@@ -376,8 +355,8 @@ jobs:
     name: "🚀 Stage 6 — GCP Terraform Apply (Deploy to Cloud)"
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: [stage-5-gcp-plan]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && secrets.GCP_WORKLOAD_IDENTITY_PROVIDER != ''
+    needs: [stage-5-gcp-plan, pipeline-integrity-check]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && needs.pipeline-integrity-check.outputs.has_gcp_creds == 'true'
     permissions:
       contents: read
       id-token: write
@@ -396,15 +375,20 @@ jobs:
         with:
           terraform_version: "1.9.0"
 
-      - name: "Terraform Apply — Deploy Verified Infrastructure"
+      - name: "Download Terraform Plan Artifact"
+        uses: actions/download-artifact@v4
+        with:
+          name: "gcp-tfplan-${{ github.sha }}"
+          path: 07_PRIMARY_PROJECT/iac/environments/gcp-dev
+
+      - name: "Verify Plan Integrity & Apply Immutable Plan"
         env:
           TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
           TF_VAR_pipeline_service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
         run: |
           cd 07_PRIMARY_PROJECT/iac/environments/gcp-dev
+          echo "=== Verifying Plan Cryptographic Digest ==="
+          sha256sum -c tfplan.sha256
           terraform init
-          terraform apply \
-            -auto-approve \
-            -var="project_id=${{ secrets.GCP_PROJECT_ID }}" \
-            -var="pipeline_service_account=${{ secrets.GCP_SERVICE_ACCOUNT }}"
+          terraform apply tfplan.binary
           terraform output deployment_summary

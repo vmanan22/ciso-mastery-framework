@@ -27,4 +27,4 @@
 
 ## 📝 Submitting a New Retrospective
 
-To add a new retrospective or failure case study, use [`templates/RETROSPECTIVE_TEMPLATE.md`](file:///Users/mananvora/CLOS_Kickoff_Mission/templates/RETROSPECTIVE_TEMPLATE.md).
+To add a new retrospective or failure case study, use [`templates/RETROSPECTIVE_TEMPLATE.md`](../templates/RETROSPECTIVE_TEMPLATE.md).

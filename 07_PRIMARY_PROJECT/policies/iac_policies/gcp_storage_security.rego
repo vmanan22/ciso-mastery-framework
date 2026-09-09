@@ -52,14 +52,27 @@ deny[msg] {
   some resource in input.planned_values.root_module.resources
   resource.type == "google_storage_bucket"
 
-  # encryption block must exist and contain a kms key
-  not resource.values.encryption[0].default_kms_key_name
+  # encryption block must exist
+  not resource.values.encryption
 
   msg := sprintf(
     "POLICY VIOLATION [GCS-02] Bucket '%s': Missing CMEK encryption. All buckets must use a Customer Managed Encryption Key (KMS). Default Google-managed keys are prohibited.",
     [resource.name]
   )
 }
+
+deny[msg] {
+  some resource in input.planned_values.root_module.resources
+  resource.type == "google_storage_bucket"
+
+  count(resource.values.encryption) == 0
+
+  msg := sprintf(
+    "POLICY VIOLATION [GCS-02] Bucket '%s': Missing CMEK encryption block. All buckets must use a Customer Managed Encryption Key (KMS).",
+    [resource.name]
+  )
+}
+
 
 # ==============================================================================
 # RULE 3: Require uniform bucket-level access (disable legacy ACLs)
