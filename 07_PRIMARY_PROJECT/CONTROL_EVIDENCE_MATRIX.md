@@ -20,15 +20,15 @@
 
 | Control ID | Requirement | Implementation | Test | Evidence Path | Status | Last Verified |
 | :---: | :--- | :--- | :--- | :--- | :---: | :---: |
-| **SC-01** | Short-lived OIDC tokens for CI/CD Cloud Access (No Long-Lived Keys) | [`.github/workflows/devsecops.yml:300-308`](file://.github/workflows/devsecops.yml) | Google WIF OIDC Token Exchange | `.github/workflows/devsecops.yml` | **verified** | 2026-08-23 |
-| **SC-02** | Bearer JWT Authentication on Protected Microservice Endpoints | [`containers/app/main.py:46-65`](file://07_PRIMARY_PROJECT/containers/app/main.py) | [`tests/test_jwt_validator.py:1-60`](file://07_PRIMARY_PROJECT/tests/test_jwt_validator.py) | `07_PRIMARY_PROJECT/tests/test_jwt_validator.py` | **verified** | 2026-08-23 |
-| **SC-03** | Cloud KMS CMEK (AES-256) Encryption at Rest with 90-Day Rotation | [`iac/environments/gcp-dev/main.tf:37-47`](file://07_PRIMARY_PROJECT/iac/environments/gcp-dev/main.tf) | Checkov CKV_GCP_82 & OPA Rego Gate | `07_PRIMARY_PROJECT/policies/iac_policies/gcp_storage_security.rego` | **verified** | 2026-08-23 |
-| **SC-04** | Hardened Security Headers (CSP, HSTS, X-Frame-Options, X-Content-Type) | [`containers/app/main.py:34-43`](file://07_PRIMARY_PROJECT/containers/app/main.py) | Unit test header assertions | `07_PRIMARY_PROJECT/tests/test_api_auth.py` | **verified** | 2026-08-23 |
-| **SC-05** | Pre-Commit & CI Secret Scanning with Full History Audit | [`.gitleaks.toml`](file://07_PRIMARY_PROJECT/.gitleaks.toml) | Gitleaks Stage 1 CI Job | `.github/workflows/devsecops.yml` | **verified** | 2026-08-23 |
-| **SC-06** | Static Application Security Testing (SAST) with Quality Gate | [`.semgrep.yml`](file://07_PRIMARY_PROJECT/.semgrep.yml) + Bandit | SAST Stage 2 Quality Gate Script | `bandit-results.json`, `semgrep.sarif` | **verified** | 2026-08-23 |
-| **SC-07** | Infrastructure-as-Code Policy-as-Code Enforcement (OPA / Rego) | [`policies/iac_policies/`](file://07_PRIMARY_PROJECT/policies/iac_policies/) | Conftest evaluation against Terraform Plan | `07_PRIMARY_PROJECT/policies/iac_policies/` | **verified** | 2026-08-23 |
-| **SC-08** | Container Hardening: Minimal Non-Root Runtime (UID 65532) | [`containers/Dockerfile.hardened`](file://07_PRIMARY_PROJECT/containers/Dockerfile.hardened) | Docker buildx + Trivy scan | `07_PRIMARY_PROJECT/containers/Dockerfile.hardened` | **verified** | 2026-08-23 |
-| **SC-09** | Cryptographic Container Image Signing & Attestation (Cosign) | [`.github/workflows/devsecops.yml:278-284`](file://.github/workflows/devsecops.yml) | Sigstore Rekor transparency log | `.github/workflows/devsecops.yml` | **in progress** | 2026-08-23 |
+| **SC-01** | Short-lived OIDC tokens for CI/CD Cloud Access (No Long-Lived Keys) | [`.github/workflows/devsecops.yml`](../.github/workflows/devsecops.yml) | Google WIF Keyless Workflow Gate | Gated in CI (Pending live cloud credentials) | **implemented** | — |
+| **SC-02** | Bearer JWT Authentication with RFC 7519 Standard Claims (sub, exp, iss, aud) | [`containers/app/main.py`](containers/app/main.py) | [`tests/test_jwt_validator.py`](tests/test_jwt_validator.py), [`tests/test_api_auth.py`](tests/test_api_auth.py) | [PR #15 CI Run #32972289149](https://github.com/vmanan22/ciso-mastery-framework/actions/runs/32972289149) (24/24 Tests Passed) | **verified** | 2026-08-26 |
+| **SC-03** | Cloud KMS CMEK (AES-256) Encryption at Rest with 90-Day Rotation | [`iac/environments/gcp-dev/main.tf`](iac/environments/gcp-dev/main.tf) | Checkov CKV_GCP_82 & OPA Rego Gate | IaC Policy Verified; Operational CMEK pending live cloud deploy | **implemented** | — |
+| **SC-04** | Hardened Security Headers (CSP, HSTS, X-Frame-Options, X-Content-Type) | [`containers/app/main.py`](containers/app/main.py) | [`tests/test_api_auth.py`](tests/test_api_auth.py) | [PR #15 CI Run #32972289149](https://github.com/vmanan22/ciso-mastery-framework/actions/runs/32972289149) (Stage 2 Integration Tests) | **verified** | 2026-08-26 |
+| **SC-05** | Pre-Commit & CI Secret Scanning with Full History Audit | [`.gitleaks.toml`](.gitleaks.toml) | Gitleaks Stage 1 CI Job | [PR #15 CI Run #32972289149](https://github.com/vmanan22/ciso-mastery-framework/actions/runs/32972289149) (0 Leaks Detected) | **verified** | 2026-08-26 |
+| **SC-06** | Static Application Security Testing (SAST) with Quality Gate | [`.semgrep.yml`](.semgrep.yml) + Bandit | SAST Stage 2 native scanner exit status + gate regression tests | [Run #34255407058](https://github.com/vmanan22/ciso-mastery-framework/actions/runs/34255407058), source commit `8c92647e1283f97330f270382bfab9efc039a3ed`; Stage 2 and Semgrep OSS both passed; retained `sast-evidence` artifact | **verified** | 2026-09-08 |
+| **SC-07** | Infrastructure-as-Code Policy-as-Code Enforcement (OPA / Rego) | [`policies/iac_policies/`](policies/iac_policies/) | Conftest evaluation against Terraform Plan | [PR #15 CI Run #32972289149](https://github.com/vmanan22/ciso-mastery-framework/actions/runs/32972289149) (Stage 3 Conftest Gate) | **verified** | 2026-08-26 |
+| **SC-08** | Container Hardening: Minimal Non-Root Runtime (UID 65532) | [`containers/Dockerfile.hardened`](containers/Dockerfile.hardened) | Docker buildx + Trivy scan | [PR #15 CI Run #32972289149](https://github.com/vmanan22/ciso-mastery-framework/actions/runs/32972289149) (0 High/Crit CVEs) | **verified** | 2026-08-26 |
+| **SC-09** | Cryptographic Container Image Signing & Attestation (Cosign) | [`.github/workflows/devsecops.yml`](../.github/workflows/devsecops.yml) | Sigstore Rekor transparency log | Configured in CI workflow (Runs on main push) | **in progress** | — |
 | **SC-10** | Dynamic Application Security Testing (DAST) on Active Endpoints | Scheduled for v0.3 milestone | OWASP ZAP automated scan | Roadmap milestone v0.3 | **planned** | — |
 | **SC-11** | Inbound Prompt Injection & Jailbreak Heuristic Guard | Scheduled for v0.2 milestone | Adversarial test suite | Roadmap milestone v0.2 | **planned** | — |
 | **SC-12** | Outbound PII & Secret Redaction Engine | Scheduled for v0.2 milestone | Automated DLP test suite | Roadmap milestone v0.2 | **planned** | — |
@@ -39,7 +39,8 @@
 ## 3. Coverage Summary
 
 * **Total Controls**: 13
-* **Verified (Automated Proof)**: 8 (62%)
-* **Implemented**: 0 (0%)
+* **Verified (Automated CI Proof)**: 6 (46%)
+* **Implemented / Locally Tested**: 2 (15%)
 * **In Progress**: 1 (8%)
 * **Planned**: 4 (31%)
+* **Reference CI Run**: [PR #15 Run #32972289149](https://github.com/vmanan22/ciso-mastery-framework/actions/runs/32972289149) (Historical reference only; separate Semgrep check failed on head `23a3e47`. Superseded for SC-06 by run #34255407058 at source commit `8c92647`; cloud stages skipped.)
