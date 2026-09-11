@@ -13,7 +13,8 @@
 │                                                                             │
 │  [v0.1] Trustworthy Foundations & Flagship Secure Software Factory          │
 │         • Fail-closed DevSecOps CI/CD, Bearer JWT Auth, OPA Policy Gate    │
-│         • Status: Release Candidate — Evidence Reconciliation In Progress   │
+│         • Status: Release Candidate — Local/CI Evidence Complete; Cloud      │
+│           Validation Pending                                                  │
 │                                                                             │
 │  [v0.2] AI Security Engineering & MCP Broker Lab                            │
 │         • Zero-Trust AI Security Gateway, Inbound/Outbound Guards           │
@@ -44,7 +45,7 @@
 
 ### 🎯 Version 0.1 — Trustworthy Foundations & Flagship Secure Software Factory (v0.1-RC)
 * **Goal**: Deliver an uncompromised, evidence-backed DevSecOps reference architecture.
-* **Status**: *Release Candidate — Evidence Reconciliation In Progress* (Target: Q3 2026).
+* **Status**: *Release Candidate — Local/CI Evidence Complete; Cloud Validation Pending* (Target: Q3 2026).
 * **Key Deliverables**:
   - [x] Fail-Closed 6-Stage CI/CD Pipeline (Gitleaks, Bandit, Semgrep, Checkov, OPA, Hardened Container, Trivy, Syft, Cosign).
   - [x] Zero-Dependency HMAC-SHA256 Bearer JWT Auth with RFC 7519 Standard Claims in FastAPI Microservice.
@@ -53,6 +54,8 @@
   - [x] Standard Apache-2.0 open-source licensing.
   - [x] Generic learner template system and private learner directory structure (`.clos-local/`).
   - [x] Open-source contributor infrastructure (`CONTRIBUTING.md`, `GOVERNANCE.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`).
+  - [x] Local/CI evidence reconciliation, including immutable container digest signing and verification.
+  - [ ] Optional controlled GCP validation of Workload Identity Federation, CMEK storage, and deployment stages.
 
 ---
 

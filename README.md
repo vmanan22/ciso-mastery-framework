@@ -49,11 +49,11 @@ In CLOS:
 
 ## 4. What works today? (Maturity: v0.1-RC)
 
-The following components are fully implemented and verified via automated tests:
+The local and CI foundations below are implemented and backed by automated evidence. Live GCP deployment remains optional and is not currently included in the verified evidence set.
 
-* **Fail-Closed 6-Stage DevSecOps CI/CD**: Gitleaks secret scanning, Semgrep AST + Bandit SAST, Checkov IaC scanning, OPA Rego policy enforcement, hardened minimal container builds, Trivy CVE scanning, Syft SPDX SBOM generation, and keyless GCP OIDC authentication.
+* **Fail-Closed DevSecOps CI/CD**: Gitleaks secret scanning, Semgrep AST + Bandit SAST, Checkov IaC scanning, OPA Rego policy enforcement, hardened minimal container builds, Trivy CVE scanning, Syft SPDX SBOM generation, and keyless container signing. GCP OIDC deployment stages run only when the repository has the required cloud credentials.
 * **Hardened Microservice with Bearer JWT**: RFC 7519 HMAC-SHA256 token verification, OWASP security headers (CSP, HSTS, X-Frame-Options), and unauthenticated health probes.
-* **Cloud KMS CMEK & Hardened Storage**: Terraform IaC enforcing AES-256 customer-managed encryption keys with automated 90-day rotation and uniform bucket-level access.
+* **Cloud KMS CMEK & Hardened Storage**: Terraform IaC enforcing AES-256 customer-managed encryption keys with automated 90-day rotation and uniform bucket-level access; live deployment is pending controlled GCP validation.
 * **Policy-as-Code Gate**: Open Policy Agent (OPA) Rego rules blocking unencrypted storage, public access, and dangerous IAM roles before deployment.
 * **Automated Evidence Matrix**: [CONTROL_EVIDENCE_MATRIX.md](07_PRIMARY_PROJECT/CONTROL_EVIDENCE_MATRIX.md) tracking 13 controls with direct links to automated tests.
 

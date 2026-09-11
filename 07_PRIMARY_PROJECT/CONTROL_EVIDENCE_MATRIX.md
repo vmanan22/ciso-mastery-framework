@@ -39,8 +39,8 @@
 ## 3. Coverage Summary
 
 * **Total Controls**: 13
-* **Verified (Automated CI Proof)**: 6 (46%)
+* **Verified (Automated CI Proof)**: 7 (54%)
 * **Implemented / Locally Tested**: 2 (15%)
-* **In Progress**: 1 (8%)
+* **In Progress**: 0 (0%)
 * **Planned**: 4 (31%)
-* **Reference CI Run**: [PR #15 Run #32972289149](https://github.com/vmanan22/ciso-mastery-framework/actions/runs/32972289149) (Historical reference only; separate Semgrep check failed on head `23a3e47`. Superseded for SC-06 by run #34255407058 at source commit `8c92647`; cloud stages skipped.)
+* **Current CI Run**: [Main run #34558083174](https://github.com/vmanan22/ciso-mastery-framework/actions/runs/34558083174) (Stages 1–4 passed; cloud stages 5–6 skipped because GCP credentials were unavailable.)
