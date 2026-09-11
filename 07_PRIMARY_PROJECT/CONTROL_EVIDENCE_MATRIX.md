@@ -43,4 +43,4 @@
 * **Implemented / Locally Tested**: 2 (15%)
 * **In Progress**: 0 (0%)
 * **Planned**: 4 (31%)
-* **Current CI Run**: [Main run #34558083174](https://github.com/vmanan22/ciso-mastery-framework/actions/runs/34558083174) (Stages 1–4 passed; cloud stages 5–6 skipped because GCP credentials were unavailable.)
+* **Current CI Run**: [Main run #34560048711](https://github.com/vmanan22/ciso-mastery-framework/actions/runs/34560048711) at head `4ddb1203e20a3b4895295c494eb65837b23c61b7` (Stages 1–4 passed; cloud stages 5–6 skipped because GCP credentials were unavailable.)

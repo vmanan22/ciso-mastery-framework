@@ -16,7 +16,7 @@
 | SC-06 | SAST & SCA scanning prior to code merge | Application | T1, E2 | OWASP ASVS V5, NIST SSDF PW.4 | 🔴 Critical | ✅ Implemented |
 | SC-07 | IaC Policy-as-Code enforcement (OPA / Rego) | Infrastructure | I1, R2 | SOC 2 CC7.1, CIS Benchmark | 🔴 Critical | ✅ Implemented |
 | SC-08 | Container security: Minimal hardened base & non-root user | Workload | E2 | CIS Docker Benchmark 4.1 | 🔴 Critical | ✅ Implemented |
-| SC-09 | Signed container images (Cosign / Sigstore) | Supply Chain | T2, E2 | SLSA Level 3, NIST SSDF PW.8 | 🟡 High | 🔨 In progress |
+| SC-09 | Signed container images (Cosign / Sigstore) | Supply Chain | T2, E2 | SLSA Level 3, NIST SSDF PW.8 | 🟡 High | ✅ Implemented |
 | SC-10 | DAST scans on active endpoints prior to production | Runtime | I2, D1 | OWASP ASVS V14 | 🟡 High | 🔨 In progress |
 
 ---
@@ -32,9 +32,9 @@
 | Application | 1 | 1 | 100% |
 | Infrastructure | 1 | 1 | 100% |
 | Workload | 1 | 1 | 100% |
-| Supply Chain | 1 | 0 | 0% |
+| Supply Chain | 1 | 1 | 100% |
 | Runtime | 1 | 0 | 0% |
-| **Total** | **10** | **7** | **70%** |
+| **Total** | **10** | **8** | **80%** |
 
 ---
 
@@ -45,3 +45,5 @@
 | ⬜ Not started | Control defined but not yet implemented |
 | 🔨 In progress | Currently being built / tested |
 | ✅ Implemented | Verified active control |
+
+SC-09 is implemented and verified in the local/CI release path with keyless Cosign signing and immutable-digest verification. Live cloud deployment controls remain pending the optional GCP validation described in the roadmap.
