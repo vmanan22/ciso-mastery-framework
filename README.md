@@ -74,6 +74,7 @@ The following components are fully implemented and verified via automated tests:
 ### Local Prerequisites
 * Python 3.11+
 * Git
+* A Python virtual environment with Semgrep, Bandit, pytest, httpx, and the application dependencies installed
 * Terraform / OpenTofu (optional for cloud labs)
 
 ### Run Verified Test Suites Locally
@@ -82,10 +83,17 @@ The following components are fully implemented and verified via automated tests:
 git clone https://github.com/vmanan22/ciso-mastery-framework.git
 cd ciso-mastery-framework
 
-# 2. Run automated pipeline integrity verification
+# 2. Install the local validation and application dependencies
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install semgrep bandit pytest httpx
+python -m pip install -r 07_PRIMARY_PROJECT/containers/app/requirements.txt
+
+# 3. Run automated pipeline integrity verification
 python3 scripts/verify_fail_closed.py
 
-# 3. Run all unit and cryptographic test suites
+# 4. Run all unit and cryptographic test suites
 PYTHONPATH=. python3 -m unittest discover -s tests -p "test_*.py"
 PYTHONPATH=07_PRIMARY_PROJECT python3 -m unittest discover -s 07_PRIMARY_PROJECT/tests -p "test_*.py"
 ```
