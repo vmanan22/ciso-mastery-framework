@@ -414,7 +414,7 @@ jobs:
           terraform_version: "1.9.0"
 
       - name: "Download Terraform Plan Artifact"
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: "gcp-tfplan-${{ github.sha }}"
           path: 07_PRIMARY_PROJECT/iac/environments/gcp-dev
