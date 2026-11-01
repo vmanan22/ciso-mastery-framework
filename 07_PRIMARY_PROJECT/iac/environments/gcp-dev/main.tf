@@ -14,7 +14,7 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "~> 5.0"
+      version = "~> 8.9"
       # WHY pin to ~> 5.0?
       # Pinning prevents a provider update from silently changing behavior.
       # The ~> operator allows patch updates (5.0.1, 5.0.2) but not major
